@@ -134,7 +134,7 @@ function genPerson(repo: Repo, prof: Profile, seed: number, lastDay: string): { 
 
     const present: Record<Slot, boolean> = { morning: r() < prof.slotP, midday: r() < prof.slotP, evening: r() < prof.slotP };
     if (outlier) present.morning = present.midday = present.evening = true;
-    if (i === DAYS - 1 && prof.slotP > 0.5) present.evening = true; // so "yesterday you told me" always works on day 91
+    if (i === DAYS - 1 && prof.slotP > 0.5) present.evening = present.midday = true; // so "yesterday you told me" always works on day 91
     const sleep = outlier ? 3.5 : clamp(7 + gauss(r) * 0.4, 6.2, 8);
     const rough = outlier;
     const weight = sleep < 5 || rough ? 0.5 : 1;
@@ -147,7 +147,7 @@ function genPerson(repo: Repo, prof: Profile, seed: number, lastDay: string): { 
     let obsN = 0;
     const obs = (sessionId: string, domain: (typeof ALL_DOMAINS)[number], itemId: string, raw: string, score: number, extra?: { features?: Record<string, number>; acoustic?: AcousticFeatures }) =>
       repo.addObservation({ id: `${prof.id}-${dayNo}-${obsN++}`, sessionId, domain, itemId, raw, score, ...extra });
-    const listId = i % WORD_TRIPLETS.length;
+    const listId = (i + 30) % WORD_TRIPLETS.length; // last seeded day uses list 39, so the next pick is the demo triplet 0 (apple, candle, river)
     const triplet = WORD_TRIPLETS[listId]!;
 
     if (present.morning) {
@@ -169,7 +169,7 @@ function genPerson(repo: Repo, prof: Profile, seed: number, lastDay: string): { 
       const k = outlier ? 1 : clamp(Math.round(recallMu + gauss(r) * 0.5), 0, 3);
       const said = triplet.slice(0, k).join(", ") || "I can't remember them.";
       obs(sid, "recall", "recall-3", said, scoreRecall(triplet, said).score);
-      const cat = CATEGORIES[i % CATEGORIES.length]!;
+      const cat = CATEGORIES[(i + 6) % CATEGORIES.length]!; // last seeded day = furniture, next pick = animals
       const singles = cat.members.filter((m) => !m.includes(" "));
       const n = outlier ? 6 : Math.max(0, Math.round(fluencyMu + gauss(r) * 2));
       const fluentSaid = singles.slice((i * 5) % 20, (i * 5) % 20 + n).join(", ");
@@ -185,9 +185,9 @@ function genPerson(repo: Repo, prof: Profile, seed: number, lastDay: string): { 
     }
     if (present.evening) {
       const sid = mk("evening", 19, 0, { mood: pick(r, ["good", "fine", "calm", "happy", "tired"]), roughDay: rough });
-      let story = STORY_BANK[(i * 7 + 3) % STORY_BANK.length]!;
+      let story = STORY_BANK[(i * 7 + 17) % STORY_BANK.length]! /* last day = granddaughter's science fair */;
       const recent = stories.slice(-14);
-      if (recent.length && r() < pRepeat) story = pick(r, recent);
+      if (recent.length && i < DAYS - 1 && r() < pRepeat) story = pick(r, recent);
       const k = Math.max(0, Math.round(fillerMu + gauss(r) * 0.8));
       const told = fillerize(story, k, r);
       const lf = languageFeatures(told);

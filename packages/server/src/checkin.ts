@@ -30,7 +30,8 @@ export function inferSlot(p: Participant): Slot {
 function pickTriplet(repo: Repo, p: Participant, day: string): number {
   const uses = repo.listWordlistUse(p.id);
   const burned = new Set(uses.filter((u) => u.usedOn >= addDays(day, -30)).map((u) => u.listId));
-  const start = uses.length % WORD_TRIPLETS.length;
+  const last = uses.at(-1);
+  const start = last ? (last.listId + 1) % WORD_TRIPLETS.length : 0;
   for (let k = 0; k < WORD_TRIPLETS.length; k++) { const id = (start + k) % WORD_TRIPLETS.length; if (!burned.has(id)) return id; }
   return start;
 }
@@ -47,7 +48,9 @@ export function startCheckin(repo: Repo, p: Participant, slotIn?: Slot) {
   const todayUse = repo.listWordlistUse(p.id).find((u) => u.usedOn === day);
   const yesterday = repo.listFacts(p.id, "dayStory", addDays(day, -1)).filter((f) => f.date === addDays(day, -1)).at(-1);
   const g = `${GREETING[slot]}, ${first}.`;
-  const cat = CATEGORIES[(repo.listSessions(p.id).length + day.length) % CATEGORIES.length]!;
+  const lastFluency = repo.observationsForParticipant(p.id, "fluency").at(-1)?.itemId.replace("fluency-", "");
+  const lastIdx = CATEGORIES.findIndex((c) => c.id === lastFluency);
+  const cat = CATEGORIES[(lastIdx + 1) % CATEGORIES.length]!;
   const push = (it: Omit<Item, "itemId">) => items.push({ itemId: `${it.type}-${items.length + 1}`, ...it });
 
   if (slot === "morning") {
@@ -158,7 +161,7 @@ export async function recordAnswer(repo: Repo, p: Participant, a: { sessionId: s
       const cat = getCategory(st.category!);
       const r = scoreFluency(cat.id, t);
       score = r.distinct;
-      addObs("fluency", t, score, { repetitions: r.repetitions, intrusions: r.intrusions }, a.acoustic);
+      repo.addObservation({ id: obsId(), sessionId: a.sessionId, domain: "fluency", itemId: `fluency-${cat.id}`, raw: t, score, features: { repetitions: r.repetitions, intrusions: r.intrusions }, acoustic: a.acoustic });
       feedback = score === 0 ? "That's okay. Those can be tricky." : `${NUMBER_TEXT(score)}. Nice!`;
       break;
     }

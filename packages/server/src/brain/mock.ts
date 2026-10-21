@@ -47,7 +47,11 @@ function onUser(s: BrainState, text: string): BrainResponse {
     return reply({ ...s, mode: "idle" }, undefined, [{ name: "start_checkin", arguments: { participantId: pid, ...(slot ? { slot } : {}) } }]);
   }
   if (/stop sharing|withdraw|leave the study/.test(low)) return reply(s, undefined, [{ name: "withdraw_from_study", arguments: { participantId: pid, studyCode: "LANTERN-PILOT" } }]);
-  if (/study code|join (a|the) study|enroll/.test(low)) {
+  if (s.mode === "consent_offer" && s.studyCode) {
+    if (/\b(no|not now|never mind)\b/.test(low)) return reply({ ...s, mode: "idle", studyCode: undefined }, "Okay. Nothing was shared. You can ask again any time.");
+    if (/\b(yes|yeah|sure|join|agree|okay|ok|i do)\b/.test(low)) return reply({ ...s, mode: "idle", studyCode: undefined }, undefined, [{ name: "record_consent", arguments: { participantId: pid, studyCode: s.studyCode, tier: /word|tier 2|both/.test(low) ? 2 : 1, assentTranscript: t } }]);
+  }
+  if (/study code|join (a|the|lantern)|enroll|pilot study/.test(low)) {
     const code = (t.match(/\b([A-Z][A-Z0-9]+-[A-Z0-9]+)\b/i)?.[1] ?? "LANTERN-PILOT").toUpperCase();
     return reply(s, undefined, [{ name: "enroll_in_study", arguments: { participantId: pid, studyCode: code } }]);
   }
@@ -92,7 +96,8 @@ function onResult(s: BrainState, name: string, args: Record<string, any> | undef
     case "schedule_doctor_visit": return reply(s, `Done. I added the visit for ${d.when ?? "that time"} and sent the note to ${d.emailedTo.join(" and ")}.`);
     case "report_concern": return reply(s, d.participantPhrasing || "Okay. I'm here if you need me.");
     case "withdraw_from_study": return reply(s, "Okay. I've stopped sharing your data with the study. You can join again any time.");
-    case "enroll_in_study": return reply({ ...s }, `Here's what the ${d.study.name} study is about. It's on the screen. If you'd like to join, tell me, and I'll sign you up.`);
+    case "enroll_in_study": return reply({ ...s, mode: "consent_offer", studyCode: d.study.studyCode } as any, `Here's what the ${d.study.name} study is about. It's on the screen. You can stop any time. Would you like to join? Say yes to share your scores, or say yes with my words to share those too.`);
+    case "record_consent": return reply(s, `You're signed up. ${d.withdrawPhrase}`);
     case "get_study_dashboard": return reply(s, `Here's the study. ${d.enrolled} people are enrolled and ${d.flags} have a gentle flag.`);
     default: return reply(s, "Okay.");
   }

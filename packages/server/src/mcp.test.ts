@@ -42,6 +42,7 @@ describe("MCP over Streamable HTTP", () => {
     expect(m.items.map((i: any) => i.type)).toEqual(["context", "orientation", "give_words"]);
     expect(m.items[2].suggestedPhrasing).toMatch(/Three words to hold onto/);
     const words = m.items[2].stimuli.words as string[];
+    expect(words).toEqual(["apple", "candle", "river"]); // demo triplet, as in the video
     let r = (await call("record_answer", { sessionId: m.sessionId, itemId: "context-1", transcript: "Not great, maybe five hours." })).structuredContent;
     expect(r.feedbackPhrasing).toMatch(/Five hours/);
     expect(repo.getSession(m.sessionId)!.weight).toBe(1); // five is not under five
@@ -54,7 +55,8 @@ describe("MCP over Streamable HTTP", () => {
 
     const mid = (await call("start_checkin", { participantId: "rose", slot: "midday" })).structuredContent;
     expect(mid.items.map((i: any) => i.type)).toEqual(["recall", "fluency", "consistency"]);
-    expect(mid.participantFacts.yesterdayStory).toBeTruthy();
+    expect(mid.participantFacts.yesterdayStory).toContain("science fair");
+    expect(mid.items[1].suggestedPhrasing).toContain("animals");
     expect(mid.items[2].suggestedPhrasing).toContain(mid.participantFacts.yesterdayStory);
     r = (await call("record_answer", { sessionId: mid.sessionId, itemId: "recall-1", transcript: `${words[0]} and ${words[2]}` })).structuredContent;
     expect(r.score).toBe(2); expect(r.feedbackPhrasing).toContain(words[1]);
@@ -172,5 +174,24 @@ describe("mock brain slot words", () => {
     const s = (await call("start_checkin", b.toolCalls[0].arguments)).structuredContent;
     expect(s.items.map((i: any) => i.type)).toContain("consistency");
     expect(s.items.find((i: any) => i.type === "consistency").suggestedPhrasing).toContain("Yesterday you told me");
+  });
+});
+
+describe("research tools over MCP", () => {
+  it("dashboard shows 12; consent flow; export; withdraw excludes", async () => {
+    process.env.LANTERN_EXPORTS_DIR = "/tmp/lantern-test-exports";
+    const d = (await call("get_study_dashboard", { studyCode: "LANTERN-PILOT" })).structuredContent;
+    expect(d.enrolled).toBe(12); expect(d.participants).toHaveLength(12);
+    const c = (await call("enroll_in_study", { participantId: "rose", studyCode: "BURST-DEMO" })).structuredContent;
+    expect(c.consentSummary).toContain("stop sharing"); expect(repo.getEnrollment("rose", "BURST-DEMO")).toBeUndefined();
+    const rc = (await call("record_consent", { participantId: "rose", studyCode: "BURST-DEMO", tier: 1, assentTranscript: "Yes, I agree." })).structuredContent;
+    expect(rc.enrolled).toBe(true); expect(repo.getEnrollment("rose", "BURST-DEMO")!.tier).toBe(1);
+    const e1 = (await call("export_research_data", { studyCode: "LANTERN-PILOT", format: "fhir" })).structuredContent;
+    expect(e1.counts.participants).toBe(12); expect(e1.deidentification.dates).toMatch(/shift/i);
+    const w = (await call("withdraw_from_study", { participantId: "rose", studyCode: "LANTERN-PILOT" })).structuredContent;
+    expect(w.withdrawn).toBe(true);
+    const e2 = (await call("export_research_data", { studyCode: "LANTERN-PILOT", format: "csv" })).structuredContent;
+    expect(e2.counts.participants).toBe(11);
+    expect((await call("get_study_dashboard", { studyCode: "LANTERN-PILOT" })).structuredContent.enrolled).toBe(11);
   });
 });

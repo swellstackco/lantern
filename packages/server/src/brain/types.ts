@@ -5,7 +5,8 @@
  */
 export interface BrainState {
   participantId: string;
-  mode: "idle" | "checkin" | "visit_offer";
+  mode: "idle" | "checkin" | "visit_offer" | "consent_offer";
+  studyCode?: string;
   session?: { sessionId: string; slot: string };
   /** words currently being held for the participant (never shown on screen) */
   hiddenWords?: string[];
