@@ -131,3 +131,24 @@ export const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
 };
 export const pill = (status: string) => { const s = STATUS_LABEL[status] ?? { text: status, cls: "none" }; return `<span class="pill ${s.cls}">${esc(s.text)}</span>`; };
 export const footer = () => `<p class="disclaimer">${esc(PRODUCT.disclaimer)}</p>`;
+
+/** Call an MCP tool from inside a view. Tries the sim/host postMessage bridge first, then the MCP Apps `App` as fallback. */
+export function callTool(app: App | undefined, name: string, args: Record<string, unknown>): Promise<any> {
+  return new Promise((resolve, reject) => {
+    if (window.parent === window) return reject(new Error("Open this page inside a host to run tools."));
+    const id = Math.random().toString(36).slice(2);
+    let done = false, acked = false;
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.id !== id) return;
+      if (e.data.type === "lantern:ack") acked = true;
+      if (e.data.type === "lantern:result") { done = true; window.removeEventListener("message", onMsg); resolve(e.data.result); }
+    };
+    window.addEventListener("message", onMsg);
+    window.parent.postMessage({ type: "lantern:call", id, name, arguments: args }, "*");
+    setTimeout(() => {
+      if (done || acked) return; // a host that acked is working; wait for it
+      window.removeEventListener("message", onMsg);
+      if (app) (app as any).callServerTool({ name, arguments: args }).then(resolve, reject); else reject(new Error("The host did not answer."));
+    }, 800);
+  });
+}
