@@ -127,6 +127,11 @@ export async function recordAnswer(repo: Repo, p: Participant, a: { sessionId: s
     return { score: 0, feedbackPhrasing: emergencyPhrasing(careName), done: true, emergency: true };
   }
 
+  if (a.acoustic && suddenVoiceDrop(repo, p.id, a.acoustic)) {
+    notifyCareCircle(repo, p, "urgent", { quote: "(Sudden, large change in how fast and how clearly the voice came through in one check-in. No words were said about it.)" });
+    repo.updateSession(a.sessionId, { endedAt: now().toISOString() });
+    return { score: 0, feedbackPhrasing: emergencyPhrasing(careName), done: true, emergency: true };
+  }
   let score = 0;
   let feedback = "Thanks.";
   switch (item.type) {
@@ -199,6 +204,14 @@ export async function recordAnswer(repo: Repo, p: Participant, a: { sessionId: s
   save(repo, a.sessionId, st);
   const nextItem = st.items[idx + 1];
   return { score, feedbackPhrasing: feedback, ...(nextItem ? { nextItem } : {}), done: !nextItem };
+}
+
+/** Sudden single-session drop in speaking rate AND syllable rate (z <= -3 against the person's own history) goes to the safety path, not the drift path. */
+export function suddenVoiceDrop(repo: Repo, participantId: string, ac: AcousticFeatures): boolean {
+  const hist = repo.observationsForParticipant(participantId, "fluency").map((o) => o.acoustic).filter((x): x is AcousticFeatures => !!x);
+  if (hist.length < 14) return false;
+  const z = (vals: number[], x: number) => { const m = vals.reduce((a, b) => a + b, 0) / vals.length; const sd = Math.sqrt(vals.reduce((a, b) => a + (b - m) ** 2, 0) / (vals.length - 1)) || 1e-6; return (x - m) / Math.max(sd, 0.05 * m); };
+  return z(hist.map((h) => h.wordsPerSec), ac.wordsPerSec) <= -3 && z(hist.map((h) => h.syllRate), ac.syllRate) <= -3;
 }
 
 const NUM = ["Zero", "One", "Two", "Three"];

@@ -195,3 +195,18 @@ describe("research tools over MCP", () => {
     expect((await call("get_study_dashboard", { studyCode: "LANTERN-PILOT" })).structuredContent.enrolled).toBe(11);
   });
 });
+
+describe("voice safety path", () => {
+  it("normal voice numbers are stored; a sudden big drop in rate and syllables is an emergency", async () => {
+    const ok = { rmsDb: -26, f0Median: 190, f0Iqr: 36, wordsPerSec: 2.6, pauseRatio: 0.22, syllRate: 4.1 };
+    let m = (await call("start_checkin", { participantId: "p-04", slot: "midday" })).structuredContent;
+    let r = (await call("record_answer", { sessionId: m.sessionId, itemId: m.items.find((i: any) => i.type === "fluency").itemId, transcript: "dog cat horse", acoustic: ok })).structuredContent;
+    expect(r.emergency).toBeUndefined();
+    expect(repo.observationsForParticipant("p-04", "f0Iqr").at(-1)!.score).toBe(36);
+    m = (await call("start_checkin", { participantId: "p-04", slot: "midday" })).structuredContent;
+    const before = repo.listOutbox().length;
+    r = (await call("record_answer", { sessionId: m.sessionId, itemId: m.items.find((i: any) => i.type === "fluency").itemId, transcript: "dog", acoustic: { ...ok, wordsPerSec: 0.8, syllRate: 1.5 } })).structuredContent;
+    expect(r.emergency).toBe(true); expect(r.feedbackPhrasing).toMatch(/911/);
+    expect(repo.listOutbox().length).toBe(before + 1);
+  });
+});

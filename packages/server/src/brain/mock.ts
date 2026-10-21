@@ -56,6 +56,7 @@ function onUser(s: BrainState, text: string): BrainResponse {
     return reply(s, undefined, [{ name: "enroll_in_study", arguments: { participantId: pid, studyCode: code } }]);
   }
   if (/doctor summary|summary for (the|her) doctor|bring to the doctor/.test(low)) return reply(s, undefined, [{ name: "get_doctor_summary", arguments: { participantId: pid } }]);
+  if (/clinician|voice (trend|view|chart)|pitch range/.test(low)) return reply(s, undefined, [{ name: "get_trend", arguments: { participantId: pid, audience: "clinician" } }]);
   if (/(send|email).*(digest|weekly)|weekly (note|digest)/.test(low)) return reply(s, undefined, [{ name: "notify_care_circle", arguments: { participantId: pid, kind: "digest" } }]);
   if (/(any )?updates? (for|on) maya|anything (new )?for maya/.test(low)) return reply({ ...s }, undefined, [{ name: "get_trend", arguments: { participantId: pid, audience: "caregiver" } }]);
   if (/(show|send).*(maya|family|trend)|trend for maya|show maya/.test(low)) return reply(s, undefined, [{ name: "get_trend", arguments: { participantId: pid, audience: "caregiver" } }]);

@@ -55,6 +55,7 @@ export default function App() {
   const [voice, setVoice] = useState(true);
   const [tab, setTab] = useState<"talk" | "dev" | "outbox">("talk");
   const [text, setText] = useState("");
+  const [meter, setMeter] = useState<{ f0Iqr: number; pauseRatio: number; rmsDb: number } | null>(null);
   const [scale, setScale] = useState(1);
   const wrap = useRef<HTMLDivElement>(null);
   const brainState = useRef<any>(undefined);
@@ -67,7 +68,7 @@ export default function App() {
   }, []);
   useEffect(() => { speech.setEnabled(voice); }, [voice]);
 
-  const send = useCallback(async (t: string, timings?: { startMs: number; endMs: number }) => {
+  const send = useCallback(async (t: string, timings?: { startMs: number; endMs: number }, acoustic?: Record<string, number>) => {
     const clean = t.replace(/^\s*alexa[,.]?\s*/i, "").trim();
     if (!mcp || !clean) return;
     setMsgs((m) => [...m.slice(-5), { who: "rose", text: t, id: nextId.current++ }]);
@@ -75,10 +76,10 @@ export default function App() {
     await runTurn(mcp, brainState, clean, {
       say: (display, spoken) => { setMsgs((m) => [...m.slice(-5), { who: "alexa", text: display, id: nextId.current++ }]); speech.speak(spoken); },
       ui: setUi, thinking: setThinking,
-    }, timings);
+    }, timings, acoustic);
   }, [mcp]);
 
-  const startMic = () => { if (!micSupported()) return; listen((t, tm) => send(t, tm), setListening); };
+  const startMic = () => { if (!micSupported()) return; setMeter(null); void listen((t, tm, ac) => send(t, tm, ac as any), setListening, setMeter); };
 
   return <div className="stage">
     <div className="device-wrap" ref={wrap} style={{ height: 800 * scale }}>
@@ -111,6 +112,11 @@ export default function App() {
           <label className="row small"><input type="checkbox" checked={voice} onChange={(e) => setVoice(e.target.checked)} /> Alexa voice</label>
           <button className="btn" onClick={() => { setUi(null); }}>Clear card</button>
         </div>
+        {meter && <div className="card meter" aria-label="Voice meter" style={{ margin: "0 0 10px" }}>
+          <div className="small muted">Voice (experimental, simulator only). Only numbers leave this page, never audio.</div>
+          <div className="small">Pitch range</div><div className="gauge"><div style={{ width: `${Math.min(100, (meter.f0Iqr / 60) * 100)}%` }} /></div>
+          <div className="small">Pauses</div><div className="gauge alt"><div style={{ width: `${Math.min(100, meter.pauseRatio * 100)}%` }} /></div>
+        </div>}
         <div className="small muted" style={{ marginBottom: 6 }}>Quick phrases</div>
         <div className="chips">{CHIPS.map((c) => <button key={c} className="chip" disabled={!mcp} onClick={() => send(c)}>{c}</button>)}</div>
         <p className="small muted" style={{ marginTop: 14 }}>{PRODUCT.disclaimer}</p>
