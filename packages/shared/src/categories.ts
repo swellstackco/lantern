@@ -1,0 +1,42 @@
+import { normPhrase } from "./text.js";
+
+const L = (s: string) => s.split(/\s*,\s*/).map((x) => x.trim()).filter(Boolean);
+
+export interface Category { id: string; label: string; prompt: string; members: string[] }
+
+const RAW: Record<string, { label: string; prompt: string; members: string }> = {
+  animals: { label: "animals", prompt: "animals", members: "dog,cat,horse,cow,pig,chicken,sheep,goat,duck,goose,turkey,rabbit,mouse,rat,squirrel,deer,bear,wolf,fox,lion,tiger,leopard,cheetah,elephant,giraffe,zebra,monkey,gorilla,chimpanzee,hippo,hippopotamus,rhino,rhinoceros,camel,kangaroo,koala,panda,otter,beaver,raccoon,skunk,possum,bat,owl,eagle,hawk,crow,robin,sparrow,parrot,penguin,ostrich,snake,lizard,turtle,frog,toad,alligator,crocodile,shark,whale,dolphin,seal,walrus,octopus,crab,lobster,fish,salmon,trout,bee,ant,spider,butterfly,moose,elk,bison,buffalo,donkey,mule,llama,hamster,gerbil,ferret,hedgehog,bull,ox,puppy,kitten,lamb,calf" },
+  fruits: { label: "fruits", prompt: "fruits", members: "apple,banana,orange,grape,strawberry,blueberry,raspberry,blackberry,cherry,peach,pear,plum,apricot,mango,pineapple,papaya,kiwi,melon,watermelon,cantaloupe,lemon,lime,grapefruit,tangerine,coconut,fig,date,pomegranate,cranberry,guava,lychee,nectarine,persimmon,avocado,currant,gooseberry,mulberry,elderberry,passionfruit,dragonfruit,raisin,prune,clementine,mandarin,honeydew,quince,plantain,starfruit,tangelo,boysenberry,kumquat,olive,huckleberry,loganberry,jackfruit,durian,soursop,tamarind,pawpaw,bilberry,cloudberry,crabapple,berry" },
+  vegetables: { label: "vegetables", prompt: "vegetables", members: "carrot,potato,tomato,onion,garlic,lettuce,cabbage,broccoli,cauliflower,spinach,kale,celery,cucumber,pepper,zucchini,squash,pumpkin,corn,pea,bean,beet,radish,turnip,parsnip,asparagus,eggplant,mushroom,leek,shallot,artichoke,okra,yam,chard,arugula,endive,collard,rutabaga,cress,sprout,lentil,chickpea,scallion,chive,fennel,kohlrabi,jicama,celeriac,watercress,daikon,edamame,tomatillo,salsify,horseradish,ginger,jalapeno,parsley,basil,radicchio,rhubarb,beetroot,romaine,sweet potato,green bean,bell pepper,brussels sprout,bok choy" },
+  kitchen: { label: "things in a kitchen", prompt: "things you find in a kitchen", members: "spoon,fork,knife,plate,bowl,cup,mug,glass,pot,pan,kettle,toaster,oven,stove,microwave,refrigerator,fridge,freezer,sink,dishwasher,blender,mixer,whisk,spatula,ladle,tongs,colander,strainer,grater,peeler,timer,skillet,saucepan,teapot,teacup,tray,napkin,towel,cabinet,drawer,counter,pantry,apron,mitt,potholder,lid,jar,bottle,pitcher,canister,corkscrew,opener,thermos,griddle,wok,casserole,platter,saucer,cleaver,sponge,dish,coaster,cutting board,rolling pin,measuring cup,can opener,paper towel" },
+  clothes: { label: "clothes", prompt: "things people wear", members: "shirt,pants,jeans,shorts,skirt,dress,sweater,jacket,coat,hat,cap,scarf,glove,mitten,sock,shoe,boot,sandal,slipper,sneaker,tie,belt,suspender,vest,blouse,pajamas,robe,underwear,bra,swimsuit,bikini,hoodie,sweatshirt,cardigan,blazer,suit,tuxedo,gown,overalls,leggings,tights,stocking,poncho,raincoat,parka,jumper,uniform,bonnet,beanie,visor,bandana,shawl,cape,kimono,sari,tunic,jersey,polo,khakis,trousers,slacks,bowtie,necktie,cufflink,t-shirt" },
+  cities: { label: "cities", prompt: "cities", members: "phoenix,seattle,portland,denver,chicago,boston,miami,atlanta,dallas,houston,austin,nashville,memphis,detroit,cleveland,pittsburgh,philadelphia,baltimore,washington,new york,los angeles,san francisco,san diego,las vegas,new orleans,london,paris,rome,madrid,berlin,vienna,prague,athens,moscow,tokyo,beijing,shanghai,seoul,bangkok,manila,delhi,mumbai,cairo,dubai,sydney,melbourne,toronto,vancouver,montreal,mexico city,lisbon,dublin,amsterdam,brussels,stockholm,oslo,copenhagen,helsinki,warsaw,budapest,istanbul,jerusalem,nairobi,lagos,rio,buenos aires,lima,bogota,santiago,havana,honolulu,anchorage,albuquerque,sacramento,kansas city,omaha,minneapolis,milwaukee,cincinnati,columbus,indianapolis,louisville,charlotte,raleigh,orlando,tampa,richmond,buffalo" },
+  tools: { label: "tools", prompt: "tools", members: "hammer,screwdriver,wrench,pliers,saw,drill,chisel,level,mallet,axe,hatchet,shovel,rake,hoe,spade,trowel,pickaxe,crowbar,sander,plane,file,vise,clamp,ratchet,socket,anvil,awl,stapler,sledgehammer,jackhammer,chainsaw,hacksaw,handsaw,jigsaw,lathe,router,torch,ladder,wheelbarrow,pruner,shears,clippers,scissors,mower,hose,broom,grinder,welder,roller,scraper,gauge,square,plumb,tape,blade,tweezers,jack,pulley,winch,tape measure,utility knife,pry bar,paint brush" },
+  instruments: { label: "musical instruments", prompt: "musical instruments", members: "piano,guitar,violin,viola,cello,bass,drum,trumpet,trombone,tuba,flute,clarinet,oboe,bassoon,saxophone,harp,banjo,mandolin,ukulele,harmonica,accordion,organ,keyboard,synthesizer,xylophone,marimba,cymbal,tambourine,triangle,bongo,conga,maraca,castanet,bagpipe,fiddle,piccolo,cornet,horn,bugle,recorder,kazoo,whistle,sitar,lute,zither,dulcimer,harpsichord,timpani,gong,bell,chime,vibraphone,glockenspiel,didgeridoo,ocarina,balalaika,koto,erhu,steelpan,cajon,djembe,flugelhorn,sousaphone,euphonium" },
+  vehicles: { label: "things that go", prompt: "cars, trucks, boats, and other ways to get around", members: "car,truck,bus,van,taxi,cab,limousine,jeep,suv,pickup,minivan,motorcycle,scooter,moped,bicycle,bike,tricycle,unicycle,skateboard,wagon,cart,carriage,buggy,sled,tractor,bulldozer,excavator,crane,forklift,train,subway,tram,trolley,streetcar,locomotive,monorail,boat,ship,ferry,yacht,canoe,kayak,raft,sailboat,rowboat,speedboat,submarine,tugboat,steamboat,gondola,airplane,plane,jet,helicopter,glider,blimp,balloon,rocket,spaceship,shuttle,ambulance,firetruck,hearse,tank,hovercraft,snowmobile" },
+  flowers: { label: "flowers", prompt: "flowers", members: "rose,tulip,daisy,lily,orchid,daffodil,sunflower,carnation,iris,violet,pansy,poppy,marigold,petunia,peony,hyacinth,lilac,lavender,jasmine,hibiscus,geranium,begonia,azalea,camellia,dahlia,zinnia,aster,chrysanthemum,gardenia,magnolia,hydrangea,snapdragon,foxglove,buttercup,dandelion,clover,lotus,bluebell,crocus,freesia,gladiolus,amaryllis,anemone,primrose,cosmos,verbena,impatiens,columbine,larkspur,delphinium,honeysuckle,wisteria,bougainvillea,oleander,plumeria,protea,edelweiss,heather,thistle,yarrow,tansy,cornflower,bellflower,lupine" },
+  sports: { label: "sports", prompt: "sports", members: "baseball,basketball,football,soccer,tennis,golf,hockey,volleyball,badminton,swimming,running,jogging,cycling,boxing,wrestling,karate,judo,fencing,archery,bowling,skiing,skating,snowboarding,surfing,sailing,rowing,diving,gymnastics,rugby,cricket,lacrosse,softball,squash,racquetball,handball,polo,curling,darts,billiards,skateboarding,hiking,climbing,fishing,weightlifting,yoga,pilates,triathlon,marathon,sprint,hurdles,discus,javelin,kickboxing,taekwondo,sumo,cheerleading,dodgeball,kickball,pickleball,paddleboarding,kayaking,canoeing,windsurfing,bobsled,luge,biathlon,decathlon,croquet,bocce,table tennis,ping pong" },
+  furniture: { label: "furniture", prompt: "things you find in a living room or bedroom", members: "chair,table,sofa,couch,bed,dresser,desk,bookshelf,bookcase,cabinet,nightstand,ottoman,bench,stool,rocker,recliner,loveseat,armchair,wardrobe,closet,armoire,hutch,sideboard,buffet,credenza,lamp,mirror,rug,carpet,curtain,crib,bunk,futon,hammock,headboard,mattress,cot,divan,settee,chaise,shelf,cupboard,chest,trunk,vanity,bureau,highchair,barstool,footstool,lowboy,highboy,secretary,davenport,chesterfield,dinette,throne,pew,workbench,sectional,daybed,trundle,canopy,coffee table,end table,coat rack,bean bag" },
+};
+
+export const CATEGORIES: Category[] = Object.entries(RAW).map(([id, c]) => ({ id, label: c.label, prompt: c.prompt, members: L(c.members) }));
+export const CATEGORY_IDS = CATEGORIES.map((c) => c.id);
+
+/** normalized member phrase -> canonical (first-seen) form */
+const dictCache = new Map<string, Map<string, string>>();
+export function categoryDict(id: string): Map<string, string> {
+  let d = dictCache.get(id);
+  if (!d) {
+    d = new Map();
+    const cat = CATEGORIES.find((c) => c.id === id);
+    if (!cat) throw new Error(`unknown category ${id}`);
+    for (const m of cat.members) { const k = normPhrase(m); if (k && !d.has(k)) d.set(k, k); }
+    dictCache.set(id, d);
+  }
+  return d;
+}
+export function getCategory(id: string): Category {
+  const c = CATEGORIES.find((x) => x.id === id);
+  if (!c) throw new Error(`unknown category ${id}`);
+  return c;
+}
