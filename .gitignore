@@ -5,3 +5,4 @@ outbox/
 exports/
 .env
 *.log
+packages/views/fixtures

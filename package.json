@@ -13,6 +13,7 @@
     "test": "vitest run",
     "typecheck": "tsc -b --noEmit false && echo ok",
     "build": "npm run build -w @lantern/views && npm run build -w @lantern/sim",
+    "fixtures": "npm run build -w @lantern/views && tsx scripts/make-fixtures.ts",
     "inspector": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:8787/mcp",
     "smoke": "bash scripts/smoke.sh"
   },

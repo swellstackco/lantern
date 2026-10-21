@@ -12,15 +12,10 @@ import { getDoctorSummary, getTrend } from "../trend.js";
 import { consentSummary, recordConsent, studyDashboard, withdraw } from "../research.js";
 import { exportResearchData } from "../export.js";
 import { firstName, now } from "../clock.js";
+import { registerViews } from "./views.js";
 
-/** ui:// resources. The HTML for each is registered in views.ts. */
-export const UI = {
-  checkin: "ui://lantern/checkin-card",
-  trend: "ui://lantern/trend-card",
-  doctor: "ui://lantern/doctor-summary",
-  dashboard: "ui://lantern/study-dashboard",
-  consent: "ui://lantern/consent-card",
-} as const;
+import { UI } from "./ui.js";
+export { UI };
 const uiMeta = (resourceUri: string, invoking: string, invoked: string) => ({ ui: { resourceUri, invoking, invoked } });
 
 type Out = Record<string, unknown>;
@@ -190,6 +185,7 @@ export function createMcpServer(repo: Repo): McpServer {
   server.registerPrompt("daily-checkin", { title: "Daily check-in", description: "Run one short check-in for a participant.", argsSchema: { participantId: z.string() } },
     (a) => ({ messages: [{ role: "user", content: { type: "text", text: `Run a ${PRODUCT.name} check-in for ${a.participantId}. Call start_checkin, ask each item's suggestedPhrasing one question at a time, call record_answer after each reply, then finish_checkin. Be warm and brief. Never reveal the three words on screen. If they mention a fall, numbness, a drooping face, or trouble speaking, call report_concern and follow its wording.` } }] }));
 
+  registerViews(server);
   void now;
   return server;
 }

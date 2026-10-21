@@ -9,3 +9,5 @@ Specific, factual notes taken while building. Format: area, what happened, sever
 5. MCP TS SDK: `_meta` passed to `registerTool` is returned unchanged in `tools/list`, which is how we publish `_meta.ui.resourceUri`. Documented only in ext-apps, not in the SDK docs.
 6. Alexa+ MCP docs: a tool call carries text only. There is no field for audio timing, loudness, or pitch, so voice-change signals (Parkinson's, ALS, and similar) cannot be measured on-platform. See FEATURE REQUEST in SPEC section 11: a consented acoustic-features API. Severity critical for health add-ons.
 7. `@modelcontextprotocol/ext-apps` is Apache-2.0 while this project is MIT. Compatible as a dependency, but worth a note in the README.
+8. ext-apps 1.7.5 + vite-plugin-singlefile 2.3.4 + Vite 7: build prints repeated 'Unknown output options: codeSplitting' warnings (plugin targets Vite 8). Output is fine. Low.
+9. ext-apps `McpUiToolMeta` types do not include Amazon's `invoking`/`invoked` fields, so we register tools with plain `registerTool` and a hand-written `_meta.ui` instead of `registerAppTool`. Suggestion: align the two docs or add the fields to the type. Low.

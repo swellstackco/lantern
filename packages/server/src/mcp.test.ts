@@ -96,6 +96,15 @@ describe("MCP over Streamable HTTP", () => {
     const e = await call("get_trend", { participantId: "nobody", audience: "participant" });
     expect(e.isError).toBe(true);
   });
+  it("serves ui:// views as text/html;profile=mcp-app", async () => {
+    for (const v of ["checkin-card", "trend-card", "doctor-summary", "study-dashboard", "consent-card"]) {
+      const r = await rpc("resources/read", { uri: `ui://lantern/${v}` });
+      const c = r.result.contents[0];
+      expect(c.mimeType).toBe("text/html;profile=mcp-app");
+      expect(c.text).toContain("<html");
+      expect(c.text, v).not.toContain("not built yet");
+    }
+  });
   it("wordlists resource and consent template resolve", async () => {
     const r = await rpc("resources/read", { uri: "lantern://wordlists" });
     expect(JSON.parse(r.result.contents[0].text)).toHaveLength(40);

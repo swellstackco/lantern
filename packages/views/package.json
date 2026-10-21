@@ -1,2 +1,4 @@
 { "name": "@lantern/views", "version": "0.1.0", "private": true, "type": "module",
-  "scripts": { "build": "echo views-build-later" } }
+  "scripts": { "build": "node build.mjs", "build:force": "node build.mjs --force" },
+  "dependencies": { "@lantern/shared": "*", "@modelcontextprotocol/ext-apps": "1.7.5" },
+  "devDependencies": { "vite": "^7.0.0", "vite-plugin-singlefile": "^2.3.4", "typescript": "^5.9.0" } }
