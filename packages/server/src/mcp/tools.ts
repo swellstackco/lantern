@@ -117,7 +117,7 @@ export function createMcpServer(repo: Repo): McpServer {
     const icsPath = join(OUTBOX_DIR, `visit-${uid.slice(0, 8)}.ics`);
     writeFileSync(icsPath, ics);
     const when = new Date(a.whenIso).toLocaleString("en-US", { timeZone: p.tz, dateStyle: "full", timeStyle: "short" });
-    const html = wrapEmail(`Visit added for ${first}`, `<h1 style="font-size:26px;margin:0 0 12px">A visit is on the calendar</h1><p style="font-size:18px;line-height:1.5">${esc(first)} has a check-up on ${esc(when)}${a.withWhom ? ` with ${esc(a.withWhom)}` : ""}. The calendar file is attached (${esc(icsPath)}). Please bring the ${PRODUCT.name} doctor summary.</p>`);
+    const html = wrapEmail(`Visit added for ${first}`, `<h1 style="font-size:26px;margin:0 0 12px">A visit is on the calendar</h1><p style="font-size:18px;line-height:1.5">${esc(first)} has a check-up on ${esc(when)}${a.withWhom ? ` with ${esc(a.withWhom)}` : ""}. The calendar file is attached (${esc(`visit-${uid.slice(0, 8)}.ics`)}). Please bring the ${PRODUCT.name} doctor summary.</p>`);
     const sent = p.careCircle.map((c) => enqueueEmail(repo, { to: c.email, subject: `Visit added for ${first}`, html, kind: "visit", attachments: [{ name: `visit-${uid.slice(0, 8)}-copy.ics`, content: ics }] }));
     return ok({ icsPath, emailedTo: sent.map((s) => s.to), when });
   }));

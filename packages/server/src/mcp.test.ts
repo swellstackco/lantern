@@ -114,3 +114,63 @@ describe("MCP over Streamable HTTP", () => {
     expect(p.result.messages[0].content.text).toContain("start_checkin");
   });
 });
+
+/* ---- brain loop, as the simulator runs it ---- */
+describe("mock brain drives MCP like the simulator", () => {
+  async function turn(state: any, text: string) {
+    const log: string[] = []; const says: string[] = []; const displays: string[] = [];
+    let ev: any = { type: "user", text };
+    for (let hop = 0; hop < 8; hop++) {
+      const b = await (await fetch(`${base}/api/brain`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state, event: ev }) })).json();
+      state = b.state; if (b.say) { says.push(b.say); displays.push(b.display); }
+      if (!b.toolCalls.length) break;
+      const tc = b.toolCalls[0]; log.push(tc.name);
+      const r = await call(tc.name, tc.arguments);
+      ev = { type: "toolResult", name: tc.name, args: tc.arguments, result: { structuredContent: r.structuredContent, isError: r.isError, text: r.content?.[0]?.text } };
+    }
+    return { state, says, displays, log };
+  }
+  it("full midday flow: recall, fluency, yesterday's story, hides the words on screen", async () => {
+    let t = await turn({ participantId: "p-01", mode: "idle" }, "good morning");
+    expect(t.log).toEqual(["start_checkin"]);
+    const first = t.says.at(-1)!;
+    t = await turn(t.state, "I slept about six hours");
+    t = await turn(t.state, "It's Wednesday");
+    expect(t.says.join(" ")).toMatch(/Three words to hold onto/);
+    expect(t.displays.join(" ")).toContain("•••");
+    expect(t.displays.join(" ")).not.toMatch(/Three words to hold onto for later: [a-z]+,/);
+    t = await turn(t.state, "okay");
+    expect(t.log).toContain("finish_checkin"); expect(t.state.mode).toBe("idle");
+    void first;
+  });
+  it("off-topic answers are handled kindly, and 'stop' ends early", async () => {
+    let t = await turn(undefined, "hello, can we check in");
+    t = await turn(t.state, "I'm not sure");
+    expect(t.says.length).toBeGreaterThan(0);
+    t = await turn(t.state, "that's all for now");
+    expect(t.log).toEqual(["finish_checkin"]); expect(t.state.mode).toBe("idle");
+  });
+  it("how am I doing, show Maya, doctor summary, I fell", async () => {
+    let t = await turn(undefined, "Alexa, how am I doing?"); expect(t.log).toEqual(["get_trend"]);
+    t = await turn(undefined, "show Maya the trend"); expect(t.log).toEqual(["get_trend"]);
+    t = await turn(undefined, "show the doctor summary"); expect(t.log).toEqual(["get_doctor_summary"]);
+    t = await turn(undefined, "I fell and my face feels numb"); expect(t.log).toEqual(["report_concern"]); expect(t.says[0]).toMatch(/911/);
+  });
+  it("any updates for Maya -> offer -> add a visit Friday 10 am writes an ics + outbox email", async () => {
+    let t = await turn(undefined, "any updates for Maya?");
+    expect(t.state.mode).toBe("visit_offer"); expect(t.says[0]).toMatch(/doctor visit/);
+    const before = repo.listOutbox().length;
+    t = await turn(t.state, "add a visit Friday 10 am");
+    expect(t.log).toEqual(["schedule_doctor_visit"]); expect(repo.listOutbox().length).toBe(before + 1);
+  });
+});
+
+describe("mock brain slot words", () => {
+  it("good afternoon starts a midday check-in with yesterday's story", async () => {
+    const b = await (await fetch(`${base}/api/brain`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state: { participantId: "p-02", mode: "idle" }, event: { type: "user", text: "Alexa, good afternoon" } }) })).json();
+    expect(b.toolCalls[0]).toEqual({ name: "start_checkin", arguments: { participantId: "p-02", slot: "midday" } });
+    const s = (await call("start_checkin", b.toolCalls[0].arguments)).structuredContent;
+    expect(s.items.map((i: any) => i.type)).toContain("consistency");
+    expect(s.items.find((i: any) => i.type === "consistency").suggestedPhrasing).toContain("Yesterday you told me");
+  });
+});

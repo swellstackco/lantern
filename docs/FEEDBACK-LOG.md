@@ -11,3 +11,4 @@ Specific, factual notes taken while building. Format: area, what happened, sever
 7. `@modelcontextprotocol/ext-apps` is Apache-2.0 while this project is MIT. Compatible as a dependency, but worth a note in the README.
 8. ext-apps 1.7.5 + vite-plugin-singlefile 2.3.4 + Vite 7: build prints repeated 'Unknown output options: codeSplitting' warnings (plugin targets Vite 8). Output is fine. Low.
 9. ext-apps `McpUiToolMeta` types do not include Amazon's `invoking`/`invoked` fields, so we register tools with plain `registerTool` and a hand-written `_meta.ui` instead of `registerAppTool`. Suggestion: align the two docs or add the fields to the type. Low.
+10. Tooling: with Vite 7.3.7 (resolved from ^7), @vitejs/plugin-react 5 throws 'Missing field moduleType' from builtin:vite-react-refresh-wrapper on every .tsx request. Workaround: drop the plugin and use esbuild jsx automatic. Low (not Amazon-specific).
