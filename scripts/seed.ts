@@ -1,9 +1,10 @@
+import { DB_PATH } from "../packages/server/src/paths.js";
 import { addDays } from "@lantern/shared";
 import { SqliteRepo } from "../packages/server/src/storage/sqlite.js";
 import { seedDatabase, ROSE_ID } from "../packages/server/src/seed.js";
 
 const demo = process.argv.includes("--demo");
-const dbPath = process.env.LANTERN_DB ?? "data/lantern.db";
+const dbPath = DB_PATH;
 const today = process.env.LANTERN_TODAY ?? new Date().toLocaleDateString("en-CA", { timeZone: "America/Phoenix" });
 const repo = new SqliteRepo(dbPath);
 const rows = seedDatabase(repo, today);

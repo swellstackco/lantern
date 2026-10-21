@@ -134,6 +134,7 @@ function genPerson(repo: Repo, prof: Profile, seed: number, lastDay: string): { 
 
     const present: Record<Slot, boolean> = { morning: r() < prof.slotP, midday: r() < prof.slotP, evening: r() < prof.slotP };
     if (outlier) present.morning = present.midday = present.evening = true;
+    if (i === DAYS - 1 && prof.slotP > 0.5) present.evening = true; // so "yesterday you told me" always works on day 91
     const sleep = outlier ? 3.5 : clamp(7 + gauss(r) * 0.4, 6.2, 8);
     const rough = outlier;
     const weight = sleep < 5 || rough ? 0.5 : 1;
