@@ -1,0 +1,26 @@
+{
+  "name": "lantern",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": ["packages/*"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "concurrently -n server,sim \"npm run dev -w @lantern/server\" \"npm run dev -w @lantern/sim\"",
+    "seed": "tsx scripts/seed.ts",
+    "demo": "tsx scripts/seed.ts --demo",
+    "test": "vitest run",
+    "typecheck": "tsc -b --noEmit false && echo ok",
+    "build": "npm run build -w @lantern/views && npm run build -w @lantern/sim",
+    "inspector": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:8787/mcp",
+    "smoke": "bash scripts/smoke.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "concurrently": "^10.0.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.5"
+  }
+}
