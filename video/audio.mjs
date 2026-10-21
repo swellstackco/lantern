@@ -86,7 +86,13 @@ export function align(text, file, total) {
   if (!cuts && best) { cuts = [...best].sort((a, b) => (b.e - b.s) - (a.e - a.s)).slice(0, need).sort((a, b) => a.s - b.s); mode = "silence-longest"; }
   if (!cuts) {
     const chars = ph.map((p) => p.length); const sum = chars.reduce((a, b) => a + b, 0); let acc = 0;
-    return { mode, phrases: ph.map((t, i) => { const s = (acc / sum) * total; acc += chars[i]; return { text: t, start: s, end: (acc / sum) * total }; }) };
+    const cand = silences(file, -38, 0.1).filter((x) => x.e < total - 0.05); const used = new Set();
+    const bounds = [0]; // proportional boundary guesses, snapped to the nearest real pause so cuts never land inside a word
+    for (let i = 0; i < need; i++) { acc += chars[i]; const g = (acc / sum) * total; let best = -1, bd = 0.7;
+      cand.forEach((c, k) => { const d = Math.abs((c.s + c.e) / 2 - g); if (!used.has(k) && d < bd) { bd = d; best = k; } });
+      if (best >= 0) { used.add(best); bounds.push(((cand[best].s + cand[best].e) / 2)); } else bounds.push(g); }
+    bounds.push(total);
+    return { mode: "proportional-snapped", phrases: ph.map((t, i) => ({ text: t, start: bounds[i], end: bounds[i + 1], mid: i < need ? bounds[i + 1] : null })) };
   }
   return { mode, phrases: ph.map((t, i) => ({ text: t, start: i === 0 ? 0 : cuts[i - 1].e - 0.03, end: i === need ? total : cuts[i].s + 0.03, mid: i < need ? (cuts[i].s + cuts[i].e) / 2 : null })) };
 }
@@ -99,4 +105,20 @@ export function piece(clip, al, i0, i1) {
   const d = dur(out);
   const phrases = al.phrases.slice(i0, i1 + 1).map((p) => ({ text: p.text, start: Math.max(0, p.start - a), end: Math.min(d, p.end - a) }));
   return { id: `${clip.id}[${i0}-${i1}]`, layer: clip.layer, file: out, dur: d, phrases, text: phrases.map((p) => p.text).join(" ") };
+}
+
+/** keep every phrase except those matching `drop`; the kept runs are cut out of the clip and joined (tiny gap) into one new clip */
+export function splice(clip, al, drop, tag) {
+  const keep = al.phrases.map((p) => !drop.test(p.text));
+  const runs = []; let s = -1;
+  keep.forEach((k, i) => { if (k && s < 0) s = i; if ((!k || i === keep.length - 1) && s >= 0) { runs.push([s, k ? i : i - 1]); s = -1; } });
+  if (runs.length === 1 && runs[0][0] === 0 && runs[0][1] === keep.length - 1) return { clip, al };
+  const parts = runs.map(([a, b]) => piece(clip, al, a, b));
+  const out = `${WORK}${clip.id}_${tag}.wav`;
+  const gap = 0.12;
+  const fc = parts.map((_, i) => `[${i}:a]apad=pad_dur=${gap}[p${i}]`).join(";") + ";" + parts.map((_, i) => `[p${i}]`).join("") + `concat=n=${parts.length}:v=0:a=1[o]`;
+  ff([...parts.flatMap((p) => ["-i", p.file]), "-filter_complex", fc, "-map", "[o]", out]);
+  const d = dur(out); let off = 0; const phrases = [];
+  for (const p of parts) { for (const ph of p.phrases) phrases.push({ ...ph, start: ph.start + off, end: ph.end + off }); off += p.dur + gap; }
+  return { clip: { ...clip, file: out, dur: d, id: clip.id }, al: { mode: "spliced", phrases } };
 }

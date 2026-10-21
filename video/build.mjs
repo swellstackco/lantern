@@ -33,14 +33,16 @@ const inspector = JSON.parse(readFileSync(`${HERE}shots/inspector.json`, "utf8")
 const excerpt = JSON.parse(readFileSync(`${HERE}shots/export-excerpt.json`, "utf8"));
 const skill = readFileSync(`${HERE}../skills/lantern-checkin/SKILL.md`, "utf8").split("\n").slice(0, 34);
 
-const dropOrder = lines.filter((l) => l.layer === "alexa" && l.priority > 0).sort((a, b) => b.priority - a.priority).map((l) => l.id);
-const drop = new Set(); let tl;
+// No dialog line (Alexa or Rose) is ever dropped. If the film is over the cap, narration is trimmed in this order.
+const CUTS = ["n08-nothing-new", "n06-decline"];
+const cuts = new Set(); let tl;
 for (;;) {
-  tl = storyboard({ clips, align: al, shots, chart, inspector, skill, excerpt, drop });
-  if (tl.duration <= LIMIT || !dropOrder.length) break;
-  const d = dropOrder.shift(); drop.add(d); console.log(`over ${LIMIT}s (${tl.duration.toFixed(1)}): Alexa line ${d} shown on screen but not voiced`);
+  tl = storyboard({ clips, align: al, shots, chart, inspector, skill, excerpt, cuts });
+  if (tl.duration <= LIMIT || cuts.size >= CUTS.length) break;
+  const c = CUTS[cuts.size]; cuts.add(c); console.log(`over ${LIMIT}s (${tl.duration.toFixed(1)}): cutting narration slice ${c}`);
 }
-tl.dropped = [...drop];
+tl.cuts = [...cuts];
+
 if (tl.duration > 178) console.warn(`WARNING: ${tl.duration.toFixed(1)}s is over the 2:58 cap`);
 const audioList = tl.audio;
 // ---- mix

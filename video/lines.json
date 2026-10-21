@@ -153,15 +153,15 @@
  {
   "id": "a08",
   "layer": "alexa",
-  "text": "Want me to add a doctor visit to the calendar?",
+  "text": "Want me to book a doctor visit?",
   "scene": "trend",
-  "priority": 3
+  "priority": 0
  },
  {
   "id": "a09",
   "layer": "alexa",
-  "text": "Done. I added the visit for Friday at 10 AM.",
+  "text": "Done. Friday at 10 AM.",
   "scene": "outbox",
-  "priority": 2
+  "priority": 0
  }
 ]

@@ -1,14 +1,14 @@
 // The edit: turns measured clip durations into one timeline (audio placement, device states, camera moves,
 // overlays, panels, cards, captions). Everything is derived from clip lengths, so swapping the voice clips
 // re-times the whole film. Pure function: (clips, alignments, shots) -> timeline.
-import { piece, chime } from "./audio.mjs";
+import { piece, chime, splice } from "./audio.mjs";
 
 const BASE = { x: 294, y: 62, scale: 1.04, opacity: 1, blur: 0 };
 const SIDE = { x: 36, y: 262, scale: 0.56, opacity: 0.9, blur: 0 };
 const PANEL = { x: 884, y: 62, scale: 1 };
 const GAP = 0.1;
 
-export function storyboard({ clips, align, shots, chart, inspector, skill, excerpt, drop = new Set() }) {
+export function storyboard({ clips, align, shots, chart, inspector, skill, excerpt, cuts = new Set() }) {
   const tl = { fps: 30, audio: [], captions: [], nocap: [], states: [], cam: [], layout: [], overlays: [], panels: [], tall: [], cards: [], term: null, notes: [] };
   const ch = chime();
   let c = 0;
@@ -20,7 +20,7 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   const ov = (o) => tl.overlays.push(o);
   const line = (id) => clips[id];
   // dialog line: voiced (returns end time) or, if dropped for time, a short silent beat
-  const voiced = (id, t) => (drop.has(id) ? t + 0.6 : ev(line(id), t));
+  const voiced = (id, t) => ev(line(id), t);
   const phr = (id) => align[id].phrases;
 
   // ---------- HOOK (ink card) ----------
@@ -145,7 +145,8 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   c = end + 0.12;
 
   // ---------- OUTBOX + VISIT ----------
-  const n06 = line("n06"), a06 = align["n06"]; const np = a06.phrases.length;
+  let n06 = line("n06"), a06 = align["n06"];
+  if (cuts.has("n06-decline")) { const r = splice(n06, a06, /never hears|decline/i, "cut"); n06 = r.clip; a06 = r.al; tl.notes.push("cut n06: Rose never hears the word 'decline.'"); } const np = a06.phrases.length;
   const cutAt = a06.phrases.findIndex((p) => /^And Alexa/i.test(p.text));
   const split = cutAt > 0 ? cutAt : Math.ceil(np / 2);
   const n06a = piece(n06, a06, 0, split - 1), n06b = piece(n06, a06, split, np - 1);
@@ -196,7 +197,8 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   c = end + 0.12;
 
   // ---------- RESEARCH ----------
-  const n08 = line("n08"), p08 = phr("n08"); const t8 = c + 0.2;
+  let n08 = line("n08"), p08 = phr("n08");
+  if (cuts.has("n08-nothing-new")) { const r = splice(n08, align.n08, /needs nothing new/i, "cut"); n08 = r.clip; p08 = r.al.phrases; tl.notes.push("cut n08: Lantern needs nothing new."); } const t8 = c + 0.2;
   const b8 = (re) => { const i = p08.findIndex((p) => re.test(p.text)); return i < 0 ? 0 : i; };
   end = ev({ ...n08, phrases: p08 }, t8);
   const a8 = (i, k = "start") => t8 + p08[Math.min(i, p08.length - 1)][k];

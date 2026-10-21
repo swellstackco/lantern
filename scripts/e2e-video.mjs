@@ -40,10 +40,10 @@ await page.getByRole("tab", { name: "JSON-RPC" }).click();
 await shot("drawer");
 await page.getByRole("tab", { name: "Talk" }).click();
 // 1:00 trend for Maya
-await say("Alexa, show Maya how Mom's doing", "doctor visit", 1500);
+await say("Alexa, show Maya how Mom's doing", "book a doctor visit", 1500);
 await shot("trend-card");
 // 1:30 outbox + visit
-await say("Friday ten", "added the visit", 1200);
+await say("Friday ten", "Friday at 10 AM", 1200);
 await page.getByRole("tab", { name: "Outbox" }).click(); await page.waitForTimeout(1200);
 await shot("outbox");
 await page.getByRole("tab", { name: "Talk" }).click();

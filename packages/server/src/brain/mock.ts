@@ -21,6 +21,14 @@ export function parseVisitTime(text: string, tz = "America/Phoenix"): string | u
   return `${d}T${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}:00-07:00`;
 }
 
+/** "2026-10-23T10:00:00-07:00" -> "Friday at 10 AM" (short enough to say and to read) */
+function visitWhen(iso: string | undefined, fallback?: string): string {
+  const m = iso?.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return fallback ?? "That's on the calendar";
+  const h = Number(m[2]), min = m[3];
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  return `${weekdayName(m[1]!)} at ${hh}${min === "00" ? "" : ":" + min} ${h < 12 ? "AM" : "PM"}`;
+}
 const redact = (say: string, words?: string[]) => (words?.length && !process.env.LANTERN_SHOW_WORDS ? words.reduce((s, w) => s.replace(new RegExp(`\\b${w}\\b`, "gi"), "•••"), say) : say);
 const reply = (state: BrainState, say?: string, toolCalls: ToolCall[] = [], hide?: string[]): BrainResponse => ({ state, say, display: say ? redact(say, hide) : undefined, toolCalls, provider: "mock" });
 
@@ -92,11 +100,11 @@ function onResult(s: BrainState, name: string, args: Record<string, any> | undef
     }
     case "get_trend":
       if (d.audience === "participant") return reply(s, d.words);
-      if (d.alert) return reply({ ...s, mode: "visit_offer" }, `Here's how ${d.participant.name.split(" ")[0]} is doing. ${d.sentence} It may be worth a check-up. Want me to add a doctor visit to the calendar?`);
+      if (d.alert) return reply({ ...s, mode: "visit_offer" }, "Want me to book a doctor visit?");
       return reply(s, `Here's how ${d.participant.name.split(" ")[0]} is doing. ${d.sentence}`);
     case "notify_care_circle": return reply(s, `Okay. I put ${d.delivered.length ? "the note" : "a note"} in Maya's outbox. It says: ${d.previewText.slice(0, 120)}`);
     case "get_doctor_summary": return reply(s, `Here's the one-page summary for ${d.identity.name.split(" ")[0]}'s doctor. It's on the screen. You can print it from there.`);
-    case "schedule_doctor_visit": return reply(s, `Done. I added the visit for ${d.when ?? "that time"} and sent the note to ${d.emailedTo.join(" and ")}.`);
+    case "schedule_doctor_visit": return reply(s, `Done. ${visitWhen(args?.whenIso as string | undefined, d.when)}.`);
     case "report_concern": return reply(s, d.participantPhrasing || "Okay. I'm here if you need me.");
     case "withdraw_from_study": return reply(s, "Okay. I've stopped sharing your data with the study. You can join again any time.");
     case "enroll_in_study": return reply({ ...s, mode: "consent_offer", studyCode: d.study.studyCode } as any, `Here's what the ${d.study.name} study is about. It's on the screen. You can stop any time. Would you like to join? Say yes to share your scores, or say yes with my words to share those too.`);
