@@ -75,3 +75,8 @@ export interface Enrollment {
 export interface OutboxItem {
   id: string; channel: "email" | "sms" | "file"; to: string; subject: string; body: string; createdAt: string; kind?: string;
 }
+
+/** Minimum plausible within-person SD per domain, so a rare lumpy score (a single miss on a 0-3 scale) is not a huge z. */
+export const DOMAIN_SIGMA_FLOOR: Record<Domain, number> = {
+  recall: 0.3, fluency: 1, orientation: 0.5, consistency: 0.5, repetition: 0.3, fillers: 0.5, f0Iqr: 3, wordsPerSec: 0.2,
+};

@@ -28,10 +28,10 @@ function pearson(x: number[], y: number[]): number {
 }
 
 /** Baseline from the first 14 scored days. r = split-half (odd/even days, Spearman-Brown), floored at 0.5 as a placeholder. */
-export function baseline(values: number[], completedOn = ""): BaselineStats {
+export function baseline(values: number[], completedOn = "", minSigma = 0.05): BaselineStats {
   const v = values.slice(0, BASELINE_DAYS);
   const mu = mean(v);
-  const sigma = Math.max(sd(v), Math.abs(mu) * MIN_SIGMA_FRACTION, 0.05);
+  const sigma = Math.max(sd(v), Math.abs(mu) * MIN_SIGMA_FRACTION, minSigma);
   const odd = v.filter((_, i) => i % 2 === 0), even = v.filter((_, i) => i % 2 === 1);
   const n = Math.min(odd.length, even.length);
   let r = 0.5;

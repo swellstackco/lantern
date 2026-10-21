@@ -1,5 +1,5 @@
 /** Turns stored observations into daily series, baselines and alert state. */
-import { ALERT_DOMAINS, BASELINE_DAYS, addDays, baseline, evaluateAlerts, type AlertRecord, type DailyPoint, type Domain, type EvalResult, type Participant } from "@lantern/shared";
+import { ALERT_DOMAINS, DOMAIN_SIGMA_FLOOR, BASELINE_DAYS, addDays, baseline, evaluateAlerts, type AlertRecord, type DailyPoint, type Domain, type EvalResult, type Participant } from "@lantern/shared";
 import { randomUUID } from "node:crypto";
 import type { Repo } from "./storage/repo.js";
 
@@ -30,7 +30,7 @@ export function computeBaselines(series: Partial<Record<Domain, DailyPoint[]>>):
   const out: Participant["baseline"] = {};
   for (const d of ALL_DOMAINS) {
     const pts = series[d];
-    if (pts && pts.length >= BASELINE_DAYS) out[d] = baseline(pts.slice(0, BASELINE_DAYS).map((p) => p.value), pts[BASELINE_DAYS - 1]!.day);
+    if (pts && pts.length >= BASELINE_DAYS) out[d] = baseline(pts.slice(0, BASELINE_DAYS).map((p) => p.value), pts[BASELINE_DAYS - 1]!.day, DOMAIN_SIGMA_FLOOR[d]);
   }
   return out;
 }
@@ -45,7 +45,8 @@ export function refreshAlerts(repo: Repo, participantId: string, asOf: string): 
   const p = repo.getParticipant(participantId);
   if (!p) throw new Error(`no participant ${participantId}`);
   const series = dailySeries(repo, p.id);
-  if (!Object.keys(p.baseline).length) { p.baseline = computeBaselines(series); repo.upsertParticipant(p); }
+  const fresh = computeBaselines(series);
+  if (Object.keys(fresh).some((d) => !p.baseline[d as Domain])) { p.baseline = { ...fresh, ...p.baseline }; repo.upsertParticipant(p); }
   const result = evaluateParticipant(repo, p, asOf, series);
   const open = repo.openAlert(p.id);
   let opened: AlertRecord | undefined;
