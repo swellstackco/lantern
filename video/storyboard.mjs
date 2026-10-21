@@ -157,7 +157,7 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   if (ib) ov({ k: "ring", sp: "panel", rect: [ib.x - 4, ib.y - 4, ib.w + 8, ib.h + 8], t0: t6 + 0.4, t1: end - 0.2 });
   t = end + 0.3;
   lay(t - 0.15, SIDE); lay(t + 0.8, BASE, "io"); cam(t, 640, 400, 1);
-  state(t + 0.2, "t2-pre"); t += 0.5; t = voiced_rose("r06", t);
+  t += 0.5; state(t, "t2-pre"); t = voiced_rose("r06", t);
   state(t, "t2-post"); t = voiced("a09", t) + 0.1;
   lay(t, BASE); lay(t + 0.9, SIDE, "io");
   const t6b = t + 0.2; end = ev(n06b, t6b);
@@ -188,12 +188,12 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   const vb = shots["vt-voice"].boxes.voice;
   state(tV + 1.0, "vt-voice");
   if (vb) {
-    const vcx = vb.x + 140, vcy = vb.y + 115;
-    cam(tV, 640, 400, 1.0); cam(tV + 1.0, 640, 400, 1.0); cam(tV + 3.8, vcx, vcy, 1.9, "io"); cam(end + 0.2, vcx + 30, vcy - 6, 2.1, "io");
+    const vcx = 440, vcy = vb.y + 115;
+    cam(tV, 640, 400, 1.0); cam(tV + 1.0, 640, 400, 1.0); cam(tV + 3.8, vcx, vcy, 1.55, "io"); cam(end + 0.2, vcx + 20, vcy - 6, 1.65, "io");
     ov({ k: "ring", sp: "world", rect: [vb.x - 20, vb.y - 20, 306, 200], t0: tV + 3.2, t1: end, label: null });
   }
   ov({ k: "chip", t0: tV + 1.2, t1: end + 0.2, text: "Voice features · simulator only · numbers, never audio", slot: 0 });
-  cam(end + 0.2, vb ? vb.x + 170 : 640, vb ? vb.y + 109 : 400, 2.1); cam(end + 0.9, 640, 400, 1.0, "io");
+  cam(end + 0.2, vb ? 460 : 640, vb ? vb.y + 109 : 400, 1.65); cam(end + 0.9, 640, 400, 1.0, "io");
   c = end + 0.12;
 
   // ---------- RESEARCH ----------
@@ -228,8 +228,8 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
 
   // ---------- EMERGENCY + CLOSE ----------
   lay(c - 0.1, { ...BASE, scale: BASE.scale * 0.97, opacity: 0, blur: 5 }); lay(c + 0.6, BASE, "out"); cam(c, 640, 400, 1);
-  sfx(c + 0.3); state(c + 0.2, "e1-pre");
-  t = c + 0.3; t = ev(line("r07"), t) + 0.08;
+  sfx(c + 0.3);
+  t = c + 0.3; state(t, "e1-pre"); t = ev(line("r07"), t) + 0.08;
   state(t, "e1-post"); const tE = t; t = ev(line("a07"), t);
   tl.alerts = [{ t0: tE + 0.1, t1: t + 1.15, title: "Call 911 now", sub: "Lantern is letting Maya know." }];
   t += 1.0; // a full second of air on the emergency
