@@ -6,3 +6,11 @@ exports/
 .env
 *.log
 packages/views/fixtures
+video/frames/
+video/out/*.mp4
+video/out/*.jpg
+video/out/*.png
+video/audio/
+video/shots/
+video/node_modules
+video/timeline.json

@@ -19,7 +19,9 @@
     "build": "npm run build -w @lantern/views && npm run build -w @lantern/sim",
     "fixtures": "npm run build -w @lantern/views && tsx scripts/make-fixtures.ts",
     "inspector": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:8787/mcp",
-    "smoke": "bash scripts/smoke.sh"
+    "smoke": "bash scripts/smoke.sh",
+    "video:capture": "node video/capture.mjs",
+    "video": "node video/build.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

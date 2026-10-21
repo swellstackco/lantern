@@ -1,0 +1,153 @@
+[
+ {
+  "id": "n01",
+  "layer": "narrator",
+  "text": "Families notice memory change months too late. Clinics test once a year — and the test itself teaches you the test.",
+  "scene": "hook"
+ },
+ {
+  "id": "n02",
+  "layer": "narrator",
+  "text": "This is Lantern. It turns the Alexa already in your kitchen into a gentle early-warning tool — a few short questions through the day, scored against your own normal, and shared with research only if you say so.",
+  "scene": "title"
+ },
+ {
+  "id": "n03",
+  "layer": "narrator",
+  "text": "Rose is a fictional sixty-eight-year-old. Her mom had Alzheimer's. Nothing here feels like a test — but every answer is a measurement. Delayed recall. Naming animals. Knowing the day. And something new: Lantern remembers what Rose told it yesterday, and checks whether today's story matches.",
+  "scene": "checkin"
+ },
+ {
+  "id": "n04",
+  "layer": "narrator",
+  "text": "Under the hood, this page is a real MCP client. Streamable HTTP, spec 2025-11-25, thirteen tools — the same server Alexa+ would call.",
+  "scene": "drawer"
+ },
+ {
+  "id": "n05",
+  "layer": "narrator",
+  "text": "Ninety days of Rose. The first two weeks set her personal baseline. Day thirty-eight — she slept three hours and had a rough morning. One bad day. Lantern lets it go, and alarms no one. But from day sixty, her recall and her stories start to slip — a little, every day. Lantern waits for ten straight days before it says anything.",
+  "scene": "trend"
+ },
+ {
+  "id": "n06",
+  "layer": "narrator",
+  "text": "Her daughter Maya, in Seattle, gets one calm email. Not a diagnosis — a nudge. And Alexa finishes the job: it books the doctor visit and sends the invite. Rose never hears the word 'decline.'",
+  "scene": "outbox"
+ },
+ {
+  "id": "n07",
+  "layer": "narrator",
+  "text": "For the doctor: one page. Real-change numbers, how often she answered, her sleep, and what Lantern does and doesn't measure. In our demo, Lantern also measures the voice itself, right in the browser: pitch range, speaking speed, pauses. Research shows a flatter voice can appear years before a Parkinson's diagnosis. Alexa+ can't share voice measurements with add-ons yet — that's our number-one request to Amazon.",
+  "scene": "doctor"
+ },
+ {
+  "id": "n08",
+  "layer": "narrator",
+  "text": "This is the part for Alzheimer's research. Studies at Penn State and Washington University already show that short, frequent tests at home are reliable — but they need an app and finger taps. Lantern needs nothing new. Researchers enroll a group with a study code, each person gives consent and can quit by voice, and the data exports with names removed, in standard medical formats.",
+  "scene": "research"
+ },
+ {
+  "id": "n09",
+  "layer": "narrator",
+  "text": "Same server, different assistant — Claude calls it through the Agent Skill. One command runs the whole thing on your own computer.",
+  "scene": "hosts"
+ },
+ {
+  "id": "n10",
+  "layer": "narrator",
+  "text": "And if something sudden happens, Lantern says the one thing that matters: call for help, now. Lantern. Not a diagnosis — a reason to talk sooner.",
+  "scene": "close"
+ },
+ {
+  "id": "r01",
+  "layer": "rose",
+  "text": "About five hours.",
+  "scene": "checkin"
+ },
+ {
+  "id": "r02",
+  "layer": "rose",
+  "text": "Tuesday.",
+  "scene": "checkin"
+ },
+ {
+  "id": "r03",
+  "layer": "rose",
+  "text": "Apple… river.",
+  "scene": "checkin"
+ },
+ {
+  "id": "r04",
+  "layer": "rose",
+  "text": "Dog, cat, horse, cow, lion, rabbit, bird, fish.",
+  "scene": "checkin"
+ },
+ {
+  "id": "r05",
+  "layer": "rose",
+  "text": "She won second place.",
+  "scene": "checkin"
+ },
+ {
+  "id": "r06",
+  "layer": "rose",
+  "text": "Friday ten.",
+  "scene": "outbox"
+ },
+ {
+  "id": "r07",
+  "layer": "rose",
+  "text": "I fell and my face feels numb.",
+  "scene": "close"
+ },
+ {
+  "id": "a01",
+  "layer": "alexa",
+  "text": "Good morning, Rose. Did you sleep okay?",
+  "scene": "checkin",
+  "priority": 0
+ },
+ {
+  "id": "a02",
+  "layer": "alexa",
+  "text": "Which ones do you remember?",
+  "scene": "checkin",
+  "priority": 2
+ },
+ {
+  "id": "a03",
+  "layer": "alexa",
+  "text": "Two of three. The other was candle.",
+  "scene": "checkin",
+  "priority": 1.2
+ },
+ {
+  "id": "a04",
+  "layer": "alexa",
+  "text": "Eight. Nice!",
+  "scene": "checkin",
+  "priority": 3
+ },
+ {
+  "id": "a05",
+  "layer": "alexa",
+  "text": "Want me to add a doctor visit to the calendar?",
+  "scene": "trend",
+  "priority": 2.5
+ },
+ {
+  "id": "a06",
+  "layer": "alexa",
+  "text": "Done. I added the visit for Friday at 10 AM.",
+  "scene": "outbox",
+  "priority": 1
+ },
+ {
+  "id": "a07",
+  "layer": "alexa",
+  "text": "Please call 911 now. I’m letting Maya know.",
+  "scene": "close",
+  "priority": 0.5
+ }
+]
