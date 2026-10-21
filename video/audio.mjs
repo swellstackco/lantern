@@ -71,9 +71,44 @@ function silences(file, n, d) {
   const e = [...o.matchAll(/silence_end: ([\d.]+)/g)].map((m) => +m[1]);
   return s.map((a, i) => ({ s: a, e: e[i] ?? a + d })).filter((x) => x.s > 0.08);
 }
-/** phrases with start/end times (seconds into the clip); uses the pauses at punctuation when they line up. */
+// word timestamps from local whisper.cpp (free, offline); cached next to the clip
+const WHISPER_MODEL = `${process.env.HOME}/.cache/whisper/ggml-medium.en.bin`;
+const norm = (w) => w.toLowerCase().replace(/[^a-z0-9]/g, "");
+function whisperWords(file) {
+  const cache = `${file}.words.json`;
+  if (existsSync(cache) && statSync(cache).mtimeMs >= statSync(file).mtimeMs) return JSON.parse(readFileSync(cache, "utf8"));
+  if (!existsSync(WHISPER_MODEL)) return null;
+  const wav16 = `${file}.16k.wav`;
+  ff(["-i", file, "-ar", "16000", "-ac", "1", wav16]);
+  const o = spawnSync("whisper-cli", ["-m", WHISPER_MODEL, "-f", wav16, "-ml", "1", "-sow"], { encoding: "utf8" });
+  if (o.status !== 0) return null;
+  const ts = (x) => { const [h, m, sec] = x.split(":"); return +h * 3600 + +m * 60 + +sec; };
+  const words = [...o.stdout.matchAll(/\[(\S+) --> (\S+)\]\s+(\S.*)/g)].map((m) => ({ s: ts(m[1]), e: ts(m[2]), w: m[3].trim() })).filter((x) => norm(x.w));
+  writeFileSync(cache, JSON.stringify(words));
+  return words;
+}
+/** phrase boundaries from whisper word timings: the end of each phrase = the word matching its last token, snapped to the nearest real pause */
+function alignWhisper(ph, file, total) {
+  const words = whisperWords(file); if (!words || !words.length) return null;
+  const pauses = silences(file, -40, 0.05);
+  const bounds = [0]; let k = 0;
+  for (let i = 0; i < ph.length - 1; i++) {
+    const toks = ph[i].split(/\s+/).map(norm).filter(Boolean); const last = toks[toks.length - 1];
+    let j = -1; for (let q = k; q < words.length; q++) { const w = norm(words[q].w); if (w === last || w.endsWith(last) || (last.length > 3 && last.endsWith(w) && w.length > 2)) { j = q; break; } }
+    if (j < 0 || j + 1 >= words.length) return null;
+    let b = (words[j].e + words[j + 1].s) / 2;
+    let best = null, bd = 0.25; for (const p of pauses) { const m = (p.s + p.e) / 2; if (Math.abs(m - b) < bd) { bd = Math.abs(m - b); best = m; } }
+    if (best !== null) b = best;
+    bounds.push(b); k = j + 1;
+  }
+  bounds.push(total);
+  for (let i = 1; i < bounds.length; i++) if (bounds[i] <= bounds[i - 1]) return null;
+  return { mode: "whisper", phrases: ph.map((t, i) => ({ text: t, start: bounds[i], end: bounds[i + 1], mid: i < ph.length - 1 ? bounds[i + 1] : null })) };
+}
+/** phrases with start/end times (seconds into the clip); whisper word timings first, else the pauses at punctuation. */
 export function align(text, file, total) {
   const ph = phrasesOf(text); const need = ph.length - 1;
+  if (need > 0) { const w = alignWhisper(ph, file, total); if (w) return w; console.warn(`align: whisper failed for ${file}, falling back to pauses`); }
   let cuts = null, mode = "proportional";
   if (need === 0) return { phrases: [{ text: ph[0], start: 0, end: total }], mode: "single" };
   const tries = [[-35, .12], [-32, .14], [-38, .10], [-30, .16], [-40, .09], [-28, .18], [-33, .2], [-36, .15], [-42, .08]];
@@ -101,7 +136,8 @@ export function piece(clip, al, i0, i1) {
   const a = i0 === 0 ? 0 : al.phrases[i0 - 1].mid ?? al.phrases[i0].start;
   const b = i1 === al.phrases.length - 1 ? clip.dur : al.phrases[i1].mid ?? al.phrases[i1].end;
   const out = `${WORK}${clip.id}_${i0}-${i1}.wav`;
-  ff(["-i", clip.file, "-ss", a.toFixed(3), "-to", b.toFixed(3), "-af", `afade=t=in:d=0.02,afade=t=out:st=${Math.max(0, b - a - 0.03).toFixed(3)}:d=0.03`, out]);
+  // trim inside the filter and reset timestamps, so the fade-out is timed from the piece's own start (output -ss left it on the source clock and silenced the tail)
+  ff(["-i", clip.file, "-af", `atrim=start=${a.toFixed(3)}:end=${b.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=in:d=0.02,afade=t=out:st=${Math.max(0, b - a - 0.03).toFixed(3)}:d=0.03`, out]);
   const d = dur(out);
   const phrases = al.phrases.slice(i0, i1 + 1).map((p) => ({ text: p.text, start: Math.max(0, p.start - a), end: Math.min(d, p.end - a) }));
   return { id: `${clip.id}[${i0}-${i1}]`, layer: clip.layer, file: out, dur: d, phrases, text: phrases.map((p) => p.text).join(" ") };
