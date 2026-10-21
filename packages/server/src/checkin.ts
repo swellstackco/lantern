@@ -38,6 +38,9 @@ function pickTriplet(repo: Repo, p: Participant, day: string): number {
 
 const GREETING: Record<Slot, string> = { morning: "Good morning", midday: "Hi", evening: "Good evening" };
 
+/** "My granddaughter called." -> "your granddaughter called." so Alexa can say it back. */
+const secondPerson = (t: string) => t.trim().replace(/\bI'm\b/g, "you're").replace(/\b(My|my)\b/g, "your").replace(/\bI\b/g, "you");
+
 export function startCheckin(repo: Repo, p: Participant, slotIn?: Slot) {
   const slot = slotIn ?? inferSlot(p);
   const day = localDay(p.tz);
@@ -55,19 +58,19 @@ export function startCheckin(repo: Repo, p: Participant, slotIn?: Slot) {
 
   if (slot === "morning") {
     push({ type: "context", prompt: "How did you sleep?", suggestedPhrasing: `${g} Did you sleep okay?` });
-    st.facets = ["weekday", Number(day.slice(8)) % 2 ? "month" : "season"];
-    push({ type: "orientation", prompt: "What day is it today?", stimuli: { facets: st.facets }, suggestedPhrasing: st.facets[1] === "month" ? "What day is it today, do you think? And what month?" : "What day is it today, do you think? And what season does it feel like?" });
+    st.facets = ["weekday"];
+    push({ type: "orientation", prompt: "What day is it today?", stimuli: { facets: st.facets }, suggestedPhrasing: "What day is it today?" });
     if (!todayUse) {
       const listId = pickTriplet(repo, p, day);
       st.words = [...WORD_TRIPLETS[listId]!] as [string, string, string];
       repo.addWordlistUse({ participantId: p.id, listId, usedOn: day });
       st.wordsGivenToday = true;
-      push({ type: "give_words", prompt: "Give three words to hold onto.", stimuli: { words: st.words, hideOnScreen: true }, suggestedPhrasing: `Three words to hold onto for later: ${st.words.join(", ")}. I'll ask you about them after lunch.` });
+      push({ type: "give_words", prompt: "Give three words to hold onto.", stimuli: { words: st.words, hideOnScreen: true }, suggestedPhrasing: `Three words for later: ${st.words.join(", ")}.` });
     }
   } else if (slot === "midday") {
     if (todayUse) {
       st.words = [...WORD_TRIPLETS[todayUse.listId]!] as [string, string, string];
-      push({ type: "recall", prompt: "Which three words were you holding onto?", suggestedPhrasing: `${g} Earlier I gave you three words. Which ones do you remember?` });
+      push({ type: "recall", prompt: "Which three words were you holding onto?", suggestedPhrasing: `${g} Which of the three words do you remember?` });
     } else {
       const listId = pickTriplet(repo, p, day);
       st.words = [...WORD_TRIPLETS[listId]!] as [string, string, string];
@@ -77,10 +80,10 @@ export function startCheckin(repo: Repo, p: Participant, slotIn?: Slot) {
       push({ type: "recall", prompt: "Which three words were you holding onto?", suggestedPhrasing: "Now, which three words were you holding onto?" });
     }
     st.category = cat.id;
-    push({ type: "fluency", prompt: `Name as many ${cat.prompt} as you can.`, stimuli: { category: cat.id }, suggestedPhrasing: `Quick one: name as many ${cat.prompt} as you can in one breath.` });
+    push({ type: "fluency", prompt: `Name as many ${cat.prompt} as you can.`, stimuli: { category: cat.id }, suggestedPhrasing: `Now name as many ${cat.prompt} as you can.` });
     if (yesterday) {
       st.yesterdayStory = yesterday.text;
-      push({ type: "consistency", prompt: "Tell me about yesterday's story.", suggestedPhrasing: `Yesterday you told me this: ${yesterday.text} Tell me about it.` });
+      push({ type: "consistency", prompt: "Tell me about yesterday's story.", suggestedPhrasing: `Yesterday you said ${secondPerson(yesterday.text)} How did it go?` });
     }
   } else {
     push({ type: "day_story", prompt: "What was the best part of your day?", suggestedPhrasing: `${g} What was the best part of your day today?` });
@@ -141,7 +144,7 @@ export async function recordAnswer(repo: Repo, p: Participant, a: { sessionId: s
       const ctx = { ...(session.context ?? {}), ...(h != null ? { sleepHours: h } : {}), ...(rough ? { roughDay: true } : {}) };
       const weight = (h != null && h < 5) || rough ? 0.5 : session.weight;
       repo.updateSession(a.sessionId, { context: ctx, weight });
-      feedback = h != null ? `${h === 1 ? "One hour" : `${NUMBER_TEXT(h)} hours`}. I'll keep that in mind.` : "Thanks for telling me.";
+      feedback = h != null ? `${h === 1 ? "One hour" : `${NUMBER_TEXT(h)} hours`}.` : "Thanks for telling me.";
       break;
     }
     case "orientation": {
@@ -150,7 +153,7 @@ export async function recordAnswer(repo: Repo, p: Participant, a: { sessionId: s
       const r = scoreOrientation(truth as any, t, facets);
       score = Math.round((r.correct.length / facets.length) * 3 * 100) / 100;
       addObs("orientation", t, score);
-      feedback = r.correct.length === facets.length ? "Right you are." : `Thanks. Today is ${weekdayName(st.day)}.`;
+      feedback = "Thanks.";
       break;
     }
     case "give_words": feedback = "Got it."; break;

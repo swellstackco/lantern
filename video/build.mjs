@@ -41,6 +41,7 @@ for (;;) {
   const d = dropOrder.shift(); drop.add(d); console.log(`over ${LIMIT}s (${tl.duration.toFixed(1)}): Alexa line ${d} shown on screen but not voiced`);
 }
 tl.dropped = [...drop];
+if (tl.duration > 178) console.warn(`WARNING: ${tl.duration.toFixed(1)}s is over the 2:58 cap`);
 const audioList = tl.audio;
 // ---- mix
 const wav = `${HERE}audio/_work/track.wav`;

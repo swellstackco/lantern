@@ -25,7 +25,7 @@ const run = (cmd, args, env = {}) => execFileSync(cmd, args, { cwd: ROOT, env: {
 run("npx", ["tsx", "scripts/seed.ts", "--demo"], { LANTERN_TODAY: DAY });
 run("npm", ["run", "build", "-w", "@lantern/views"]);
 const procs = [
-  spawn("npm", ["run", "start", "-w", "@lantern/server"], { cwd: ROOT, env: { ...process.env, LANTERN_NOW: NOW }, stdio: "ignore", detached: true }),
+  spawn("npm", ["run", "start", "-w", "@lantern/server"], { cwd: ROOT, env: { ...process.env, LANTERN_NOW: NOW, LANTERN_SHOW_WORDS: "1" }, stdio: "ignore", detached: true }),
   spawn("npm", ["run", "dev", "-w", "@lantern/sim"], { cwd: ROOT, stdio: "ignore", detached: true }),
 ];
 const cleanup = () => { for (const p of procs) { try { process.kill(-p.pid, "SIGTERM"); } catch {} } };
@@ -58,13 +58,21 @@ const frame = () => page.frameLocator("iframe").first();
 async function shotDevice(name, extra = {}) {
   const o = await box(dev());
   await dev().screenshot({ path: `${OUT}/${name}.png`, omitBackground: true, animations: "disabled" });
-  const dots = await page.evaluate(() => { const w = document.createTreeWalker(document.querySelector(".ribbon"), NodeFilter.SHOW_TEXT); let n, a = null, z = null; while ((n = w.nextNode())) { let i = n.nodeValue.indexOf("•••"); if (i >= 0) { const r = document.createRange(); r.setStart(n, i); r.setEnd(n, n.nodeValue.lastIndexOf("•••") + 3); const rects = [...r.getClientRects()]; const b = r.getBoundingClientRect(); a = { x: b.x, y: b.y, width: b.width, height: b.height }; } } return a; });
+  const dots = await page.evaluate(() => { const w = document.createTreeWalker(document.querySelector(".ribbon"), NodeFilter.SHOW_TEXT); let n, a = null, z = null; while ((n = w.nextNode())) { let i = n.nodeValue.indexOf("apple"); if (i >= 0 && n.nodeValue.includes("river")) { const r = document.createRange(); r.setStart(n, i); r.setEnd(n, n.nodeValue.lastIndexOf("river") + 5); const rects = [...r.getClientRects()]; const b = r.getBoundingClientRect(); a = { x: b.x, y: b.y, width: b.width, height: b.height }; } } return a; });
   const bubbles = await page.locator(".bubble").count();
   const boxes = { dots: rel(dots, o), lastBubble: bubbles ? rel(await box(page.locator(".bubble").last()), o) : null, ribbon: rel(await box(page.locator(".ribbon")), o), main: rel(await box(page.locator(".main")), o), screen: rel(await box(page.locator(".screen")), o), ...extra };
   manifest[name] = { file: `${name}.png`, w: 1280, h: 800, boxes };
   return o;
 }
-const settle = async () => { await page.waitForFunction(() => !document.querySelector(".bar.on")); await page.waitForTimeout(900); };
+const settle = async () => {
+  await page.waitForFunction(() => !document.querySelector(".bar.on"));
+  await page.waitForTimeout(900);
+  // cards are delivered by postMessage a moment after load: wait until the card actually has content
+  if (await page.locator("iframe").count()) {
+    for (let i = 0; i < 50; i++) { const txt = await frame().locator("body").innerText({ timeout: 1000 }).catch(() => ""); if (txt.trim().length > 8) break; await page.waitForTimeout(150); }
+    await page.waitForTimeout(300);
+  }
+};
 
 let gateOpen = true, gateRelease = () => {}, gate = Promise.resolve();
 await page.route("**/api/brain", async (route) => { if (!gateOpen) await gate; await route.continue(); });
@@ -187,6 +195,20 @@ async function tallShot(name) {
 await turn("ds", "Show the doctor summary");
 await tallShot("doctor-tall");
 await page.getByRole("button", { name: "Close" }).click(); await page.waitForTimeout(500);
+const cardText = () => frame().locator("body").innerText({ timeout: 1500 }).catch(() => "");
+await turn("vt", "show the voice trend");
+for (let k = 0; k < 4 && (await cardText()).trim().length < 20; k++) {   // the card occasionally arrives blank: ask again
+  await page.getByRole("button", { name: "Clear card" }).click(); await page.waitForTimeout(300);
+  await turn(`vt${k}`, "show the voice trend");
+  manifest["vt-pre"] = manifest[`vt${k}-pre`]; manifest["vt-post"] = manifest[`vt${k}-post`];
+}
+await frame().locator("svg").first().waitFor({ timeout: 8000 }).catch(() => problems.push("voice card did not render"));
+{ const fv = page.frames().find((f) => f !== page.mainFrame());
+  await fv.evaluate(() => { const e = document.scrollingElement; e.scrollTo(0, e.scrollHeight); });
+  await page.waitForTimeout(700);
+  const o = await box(dev()); const lab = frame().getByText(/Voice range/).first();
+  await shotDevice("vt-voice", { voice: rel(await box(lab), o), voiceHtml: null });
+  writeFileSync(`${OUT}/vt.txt`, await frame().locator("body").innerText().catch(() => "")); }
 await turn("sd", "Show the study dashboard");
 await tallShot("dashboard-tall");
 const fr = frame();

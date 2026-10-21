@@ -13,14 +13,15 @@ It re-measures every clip in `video/audio/`, rebuilds the timeline, mixes the au
 ## Where the voices go
 `video/lines.json` lists every line `{id, layer, text, scene}`. Clips live at `video/audio/<layer>/<id>.wav` (mp3/m4a also fine):
 - `narrator/n01..n10` and `rose/r01..r07`: drop real (Cartesia) clips here and run `npm run video`. Missing ones fall back to macOS `say` placeholders.
-- `alexa/a01..a07`: always the local macOS `say` voice (Samantha). Regenerated when the text in lines.json changes.
+- `alexa/a01..a09`: always the local macOS `say` voice (Samantha). Regenerated when the text in lines.json changes. a01-a06 and a07 are the check-in/emergency lines and are never dropped; a08/a09 (priority > 0) may be left unvoiced.
+- Rose clips get a light "in the kitchen" treatment in `audio.mjs` (highpass 180 Hz, lowpass 6.5 kHz, short room echo, -1 dB); narrator and Alexa are untouched.
 Clips are trimmed, levelled and measured automatically; captions and callouts follow the pauses at punctuation inside each clip.
-Alexa lines with `priority` > 0 are shown on screen but left unvoiced when the film would pass `--limit` (default 177.8 s). Edit priorities in lines.json.
+The app's Alexa wording for the check-in was changed so screen text equals spoken text (see packages/server/src/checkin.ts). Alexa lines with `priority` > 0 are shown on screen but left unvoiced when the film would pass `--limit` (default 177.8 s). Edit priorities in lines.json.
 
 ## Capture (only when the app changes)
     npm run video:capture   # stop `npm run dev` first; it starts its own seeded copy with the clock pinned to a Tuesday 08:12
 Drives the real simulator headless and muted via the text input, saves 3x stills + element boxes to `video/shots/`, and runs the real
-MCP Inspector CLI for the terminal scene (`shots/inspector.json`). Needs network once for `npx @modelcontextprotocol/inspector`.
+MCP Inspector CLI for the terminal scene (`shots/inspector.json`). The capture sets LANTERN_SHOW_WORDS=1 so the three words are visible on screen (the product default still masks them). Needs network once for `npx @modelcontextprotocol/inspector`.
 
 ## Layout
 `capture.mjs` stills | `audio.mjs` clips, trim, alignment | `storyboard.mjs` the edit | `scene.html` pure `renderAt(t)` | `render.mjs` Chrome frames | `build.mjs` orchestration.

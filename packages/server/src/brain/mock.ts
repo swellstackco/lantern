@@ -21,7 +21,7 @@ export function parseVisitTime(text: string, tz = "America/Phoenix"): string | u
   return `${d}T${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}:00-07:00`;
 }
 
-const redact = (say: string, words?: string[]) => (words?.length ? words.reduce((s, w) => s.replace(new RegExp(`\\b${w}\\b`, "gi"), "•••"), say) : say);
+const redact = (say: string, words?: string[]) => (words?.length && !process.env.LANTERN_SHOW_WORDS ? words.reduce((s, w) => s.replace(new RegExp(`\\b${w}\\b`, "gi"), "•••"), say) : say);
 const reply = (state: BrainState, say?: string, toolCalls: ToolCall[] = [], hide?: string[]): BrainResponse => ({ state, say, display: say ? redact(say, hide) : undefined, toolCalls, provider: "mock" });
 
 function onUser(s: BrainState, text: string): BrainResponse {

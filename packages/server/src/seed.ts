@@ -10,7 +10,7 @@ import { SEED_STUDIES } from "./studies.js";
 import type { Repo } from "./storage/repo.js";
 
 export const STORY_BANK: string[] = [
-  "My granddaughter called about her science fair project on volcanoes.",
+  "My granddaughter had a science fair.",
   "I helped at the church bake sale and we sold every lemon bar.",
   "I pulled weeds in the garden and found two ripe peppers.",
   "The neighbor's dog got out again and I walked him home.",

@@ -44,9 +44,9 @@
 .pane .bar{position:relative;z-index:3;height:46px;display:flex;align-items:center;gap:8px;padding:0 18px;font:600 17px Inter,sans-serif}
 .pane .dot{width:13px;height:13px;border-radius:50%}
 .pane pre{margin:0;padding:18px 24px;font:500 17px/1.38 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word}
-#skill{left:60px;width:760px;background:var(--card);border:1px solid var(--line)}#skill .bar{background:#EFE7D6;color:var(--ink2)}#skill pre{background:var(--card)}
-#skill pre{color:var(--ink);position:relative}
-#shell{left:850px;width:1010px;background:#14191D;color:#E9E2D3}#shell .bar{background:#222B31;color:#9fb0b8}
+
+
+#shell{left:150px;width:1620px;top:80px;height:820px;background:#14191D;color:#E9E2D3}.pane pre#shb{font:500 27px/1.42 ui-monospace,Menlo,monospace;padding:26px 34px}#shell .bar{background:#222B31;color:#9fb0b8}
 #shell .p{color:#E8A33D}.hl{background:rgba(232,163,61,.28);border-radius:4px;box-shadow:0 0 0 2px rgba(232,163,61,.55)}
 .k1{color:#7fd0cc}.k2{color:#9fb0b8}
 #excerpt{position:absolute;left:960px;top:230px;width:900px;opacity:0;background:#14191D;color:#E9E2D3;border-radius:18px;overflow:hidden;box-shadow:0 30px 60px rgba(30,42,50,.4)}
@@ -54,6 +54,7 @@
 #excerpt pre{max-height:520px;overflow:hidden;margin:0;padding:14px 20px;font:500 15.5px/1.38 ui-monospace,Menlo,monospace;white-space:pre-wrap}
 #excerpt .leg{padding:10px 20px 14px;font:600 18px Inter,sans-serif;display:flex;gap:22px;background:#1b242a}
 .mid{background:rgba(43,122,120,.45);border-radius:4px;padding:0 3px}.mdt{background:rgba(232,163,61,.45);border-radius:4px;padding:0 3px}
+#alert{position:absolute;left:0;right:0;top:300px;height:330px;opacity:0;background:linear-gradient(100deg,#C9831C,#E8A33D 55%,#F0B656);box-shadow:0 30px 70px rgba(30,42,50,.45);display:flex;flex-direction:column;justify-content:center;padding:0 140px;border-top:6px solid #7A4B07;border-bottom:6px solid #7A4B07}#alert .at{font:700 128px/1.05 Georgia,serif;color:#1E2A32}#alert .as{font:500 46px/1.3 Georgia,serif;color:#3a2504;margin-top:14px}
 #fade{position:absolute;inset:0;background:#1E2A32;opacity:1;pointer-events:none}
 </style></head><body>
 <div id="stage">
@@ -64,7 +65,8 @@
  <div id="ovl"></div>
  <div id="chips"></div>
  <div id="excerpt"><div class="bar">exports/ · de-identified output (real files written by the server)</div><pre id="exb"></pre><div class="leg"><span><span class="mid">P-001</span> pseudonymous ID</span><span><span class="mdt">2026-…</span> shifted dates</span></div></div>
- <div id="term"><div class="pane" id="skill"><div class="bar"><span class="dot" style="background:#E8A33D"></span>skills/lantern-checkin/SKILL.md</div><pre id="skb"></pre></div><div class="pane" id="shell"><div class="bar"><span class="dot" style="background:#ff6b5e"></span><span class="dot" style="background:#f6c244"></span><span class="dot" style="background:#5ec269"></span>&nbsp; real MCP Inspector CLI → http://localhost:8787/mcp</div><pre id="shb"></pre></div></div>
+ <div id="term"><div class="pane" id="shell"><div class="bar"><span class="dot" style="background:#ff6b5e"></span><span class="dot" style="background:#f6c244"></span><span class="dot" style="background:#5ec269"></span>&nbsp; Agent Skill lantern-checkin &nbsp;·&nbsp; real call to the running Lantern server</div><pre id="shb"></pre></div></div>
+ <div id="alert"><div class="at"></div><div class="as"></div></div>
  <div id="cards"></div>
  <div id="cap"><div></div></div>
  <div id="fade"></div>
@@ -145,9 +147,11 @@ window.renderAt=async function(t){
   // ---- excerpt
   const X=TL.excerpt, ex=document.getElementById('excerpt'); if(X){ const a=ramp(t,X.t0,X.t0+.6)*(1-ramp(t,X.t1-.4,X.t1)); ex.style.opacity=a; ex.style.display=a<.003?'none':'block'; ex.style.transform=`translateY(${24*(1-E.out(ramp(t,X.t0,X.t0+.7)))}px)`; if(a>0&&!ex.dataset.f){ ex.dataset.f=1; const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;'); const mark=s=>esc(s).replace(/(P-\d{3}|"id": "[^"]+")/g,'<span class="mid">$1</span>').replace(/(\d{4}-\d{2}-\d{2})/g,'<span class="mdt">$1</span>'); document.getElementById('exb').innerHTML=mark(X.csv.split('\n').slice(0,7).map(l=>l.slice(0,100)).join('\n'))+'\n\n'+mark(X.fhir.split('\n').filter(l=>/"id"|date|Date|effective|issued|resourceType|identifier|value"/.test(l)).slice(0,9).join('\n')); } }
   // ---- cards
-  for(const c of TL.cards){ const a=ramp(t,c.t0,c.t0+.7)*(c.noOut?1:1-ramp(t,c.t1-.9,c.t1)); c.dom.style.opacity=a; c.dom.style.display=a<.003?'none':'flex'; if(a<.003)continue;
+  for(const c of TL.cards){ let a=c.bloom?1:ramp(t,c.t0,c.t0+.7); a*=(c.noOut?1:1-ramp(t,c.t1-.9,c.t1)); if(t<c.t0)a=0; if(c.hideAfter&&t>c.t1)a=0; c.dom.style.opacity=a; if(c.bloom){ const R=2300*E.io(ramp(t,c.t0,c.t0+1.5)); const m=`radial-gradient(circle at 50% 40%, #000 ${R}px, transparent ${R+260}px)`; c.dom.style.webkitMaskImage=m; c.dom.style.maskImage=m; } c.dom.style.display=a<.003?'none':'flex'; if(a<.003)continue;
     c.glowEl.style.opacity=(c.glow||.8)*(.85+.15*Math.sin(t*.9)); if(c.lan){ c.lan.style.filter=`drop-shadow(0 0 ${28+14*Math.sin(t*1.1)}px rgba(232,163,61,.75))`; }
-    for(const it of c.items){ const k=E.out(ramp(t,it.t,it.t+.9)); it.dom.style.opacity=k; it.dom.style.transform=`translateY(${18*(1-k)}px)`; } }
+    const outK=c.itemsOutAt!=null?1-ramp(t,c.itemsOutAt,c.itemsOutAt+.5):1; for(const it of c.items){ const k=E.out(ramp(t,it.t,it.t+.9))*outK; it.dom.style.opacity=k; it.dom.style.transform=`translateY(${18*(1-k)}px)`; } }
+  // ---- alerts
+  { const al=document.getElementById('alert'); let on=null; for(const x of (TL.alerts||[])) if(t>=x.t0&&t<=x.t1)on=x; if(on){ const k=E.out(ramp(t,on.t0,on.t0+.45)); const a=k*(1-ramp(t,on.t1-.35,on.t1)); al.style.opacity=a; al.style.transform=`translateX(${-120*(1-k)}px)`; al.children[0].textContent=on.title; al.children[1].textContent=on.sub; al.style.filter=`drop-shadow(0 0 ${14+10*Math.sin(t*5)}px rgba(232,163,61,.55))`; } else al.style.opacity=0; }
   // ---- captions
   let cap=null; for(const k of TL.captions){ if(t>=k.t0&&t<=k.t1){cap=k;break;} }
   const capE=document.getElementById('cap'); if(cap){ capE.firstChild.textContent=cap.text; capE.style.opacity=ramp(t,cap.t0,cap.t0+.14)*(1-ramp(t,cap.t1-.14,cap.t1)); } else capE.style.opacity=0;
@@ -155,17 +159,14 @@ window.renderAt=async function(t){
 };
 let tsetup=false;
 function drawTerm(t,T){
-  const I=T.inspector; const sk=document.getElementById('skb'); if(!T.done){ T.done=1; sk.textContent=T.skill.join('\n'); }
-  sk.style.top=-(ramp(t,T.t0,T.t1)*260)+'px';
-  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  const type=(cmd,t0,dur)=>cmd.slice(0,Math.floor(cmd.length*E.lin(ramp(t,t0,t0+dur))));
-  const c1=I.toolsList, c2=I.getTrend; let html='';
-  const short=c=>c.replace('npx @modelcontextprotocol/inspector --cli http://localhost:8787/mcp --transport http','npx @modelcontextprotocol/inspector --cli $LANTERN --transport http');
-  if(t>=T.k[0]){ html+=`<span class="p">$</span> ${esc(short(type(c1.cmd,T.k[0],1.3)))}${t<T.k[0]+1.3?'<span class="p">▌</span>':''}\n`;
-    if(t>=T.k[0]+1.5){ const lines=c1.out.split('\n'); const n=Math.floor(Math.min(1,ramp(t,T.k[0]+1.5,T.k[0]+2.3))*8); html+=`<span class="k2">${esc(lines.slice(0,n).map(l=>l.length>96?l.slice(0,96)+'…':l).join('\n'))}</span>\n`; if(n>=8){ let cnt='13'; try{cnt=JSON.parse(c1.out).tools.length;}catch(e){} html+=`<span class="k2">  … ${(c1.out.length-lines.slice(0,8).join('\n').length).toLocaleString()} more characters</span>\n<span class="k1">→ ${cnt} tools returned in ${c1.ms} ms</span>\n\n`; } } }
-  if(t>=T.k[1]){ html+=`<span class="p">$</span> ${esc(short(type(c2.cmd,T.k[1],1.5)))}${t<T.k[1]+1.5?'<span class="p">▌</span>':''}\n`;
-    if(t>=T.k[1]+1.7){ const all=c2.out.split('\n'); const lines=all.slice(0,9).map(l=>l.length>96?l.slice(0,96)+'…':l).concat(['    … (trimmed for the screen)'],all.filter(l=>/sentence/.test(l)).slice(-1).map(l=>l.length>130?l.slice(0,130)+'…':l)); const n=Math.floor(Math.min(1,ramp(t,T.k[1]+1.7,T.k[1]+2.6))*lines.length); html+=lines.slice(0,n).map(l=>/sentence|"words"/.test(l)?`<span class="hl">${esc(l)}</span>`:`<span class="k2">${esc(l)}</span>`).join('\n'); } }
-  const sh=document.getElementById('shb'); sh.innerHTML=html; const over=sh.scrollHeight-750; sh.style.marginTop=(over>0?-over:0)+'px';
+  const I=T.inspector, c2=I.getTrend; const esc=x=>x.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const type=(cmd,t0,dur)=>cmd.slice(0,Math.floor(cmd.length*ramp(t,t0,t0+dur)));
+  const cmd='npx @modelcontextprotocol/inspector --cli $LANTERN --transport http --method tools/call --tool-name get_trend --tool-arg participantId=rose --tool-arg audience=caregiver';
+  let html=`<span class="p">$</span> ${esc(type(cmd,T.k[0],1.8))}${t<T.k[0]+1.8?'<span class="p">▌</span>':''}\n`;
+  if(t>=T.k[0]+2.0){ if(!T.lines){ let o={}; try{o=JSON.parse(c2.out).structuredContent;}catch(e){} const el=x=>Array.isArray(x)?(x.length>3?['… '+x.length+' items']:x.map(el)):(x&&typeof x==='object'?Object.fromEntries(Object.entries(x).map(([k,v])=>[k,el(v)])):x); T.lines=JSON.stringify(el(o),null,2).split('\n').map(l=>l.length>78?l.slice(0,78)+'…':l).slice(0,15).concat(['  …']); }
+    const n=Math.floor(Math.min(1,ramp(t,T.k[0]+2.0,T.k[0]+2.9))*T.lines.length);
+    html+=`<span class="k1">→ result (${c2.ms} ms)</span>\n`+T.lines.slice(0,n).map(l=>/sentence|"words"/.test(l)?`<span class="hl">${esc(l)}</span>`:`<span class="k2">${esc(l)}</span>`).join('\n'); }
+  document.getElementById('shb').innerHTML=html;
 }
 init();
 </script></body></html>

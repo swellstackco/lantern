@@ -111,43 +111,57 @@
  {
   "id": "a02",
   "layer": "alexa",
-  "text": "Which ones do you remember?",
+  "text": "Five hours. What day is it today?",
   "scene": "checkin",
-  "priority": 2
+  "priority": 0
  },
  {
   "id": "a03",
   "layer": "alexa",
-  "text": "Two of three. The other was candle.",
+  "text": "Thanks. Three words for later: apple, candle, river.",
   "scene": "checkin",
-  "priority": 1.2
+  "priority": 0
  },
  {
   "id": "a04",
   "layer": "alexa",
-  "text": "Eight. Nice!",
+  "text": "Hi, Rose. Which of the three words do you remember?",
   "scene": "checkin",
-  "priority": 3
+  "priority": 0
  },
  {
   "id": "a05",
   "layer": "alexa",
-  "text": "Want me to add a doctor visit to the calendar?",
-  "scene": "trend",
-  "priority": 2.5
+  "text": "Two of three. The other was candle. Now name as many animals as you can.",
+  "scene": "checkin",
+  "priority": 0
  },
  {
   "id": "a06",
   "layer": "alexa",
-  "text": "Done. I added the visit for Friday at 10 AM.",
-  "scene": "outbox",
-  "priority": 1
+  "text": "Eight. Nice! Yesterday you said your granddaughter had a science fair. How did it go?",
+  "scene": "checkin",
+  "priority": 0
  },
  {
   "id": "a07",
   "layer": "alexa",
-  "text": "Please call 911 now. I’m letting Maya know.",
+  "text": "This could be an emergency. Please call 911 now. I'm letting Maya know.",
   "scene": "close",
-  "priority": 0.5
+  "priority": 0
+ },
+ {
+  "id": "a08",
+  "layer": "alexa",
+  "text": "Want me to add a doctor visit to the calendar?",
+  "scene": "trend",
+  "priority": 3
+ },
+ {
+  "id": "a09",
+  "layer": "alexa",
+  "text": "Done. I added the visit for Friday at 10 AM.",
+  "scene": "outbox",
+  "priority": 2
  }
 ]

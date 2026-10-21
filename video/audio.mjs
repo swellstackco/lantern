@@ -38,7 +38,7 @@ export function prepLine(line) {
   } else if (!src) { src = { file: makeSay(line), ext: "aiff" }; placeholder = true; }
   else if (existsSync(side)) placeholder = src.ext === "aiff";
   const out = `${WORK}${line.id}.wav`;
-  const stamp = `${src.file}:${statSync(src.file).mtimeMs}`;
+  const stamp = `v3:${src.file}:${statSync(src.file).mtimeMs}`;
   const stampFile = `${WORK}${line.id}.stamp`;
   if (!existsSync(out) || !existsSync(stampFile) || readFileSync(stampFile, "utf8") !== stamp) {
     const tmp = `${WORK}${line.id}.raw.wav`;
@@ -47,7 +47,9 @@ export function prepLine(line) {
     const vd = spawnSync("ffmpeg", ["-i", tmp, "-af", "volumedetect", "-f", "null", "-"], { encoding: "utf8" }).stderr;
     const mean = parseFloat(/mean_volume: (-?[\d.]+) dB/.exec(vd)?.[1] ?? "-21");
     const gain = Math.max(-12, Math.min(14, -21 - mean));
-    ff(["-i", tmp, "-af", `volume=${gain.toFixed(2)}dB,alimiter=limit=0.89,apad=pad_dur=0.04`, "-ar", "44100", "-ac", "1", out]);
+    // Rose only: a light "in the kitchen" treatment so she reads as a person in a room next to the clean studio narrator
+    const room = line.layer === "rose" ? ",highpass=f=180,lowpass=f=6500,aecho=0.85:0.5:38|71:0.16|0.09,volume=-1dB" : "";
+    ff(["-i", tmp, "-af", `volume=${gain.toFixed(2)}dB${room},alimiter=limit=0.89,apad=pad_dur=0.04`, "-ar", "44100", "-ac", "1", out]);
     writeFileSync(stampFile, stamp);
   }
   return { ...line, file: out, dur: dur(out), placeholder };

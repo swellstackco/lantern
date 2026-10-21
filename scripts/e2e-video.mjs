@@ -25,12 +25,12 @@ await shot("ambient");
 // 0:20 morning
 await say("Alexa, good morning", "Good morning, Rose");
 await shot("morning-card");
-await say("About five hours", "keep that in mind");
-let r = await say("Tuesday", "Three words to hold onto");
+await say("About five hours", "What day is it today");
+let r = await say("Tuesday", "Three words for later");
 if (/apple|candle|river/i.test(r)) problems.push("the three words are visible on screen");
 await say("ok", "Have a good morning");
 // midday
-await say("Alexa, good afternoon", "three words");
+await say("Alexa, good afternoon", "three words do you remember");
 await say("Apple... river", "other was candle");
 await say("dog, cat, horse, cow, pig, chicken, lion, tiger", "Eight");
 await shot("midday-story");

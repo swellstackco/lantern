@@ -40,7 +40,7 @@ describe("MCP over Streamable HTTP", () => {
     const before = repo.listSessions("rose").length;
     const m = (await call("start_checkin", { participantId: "rose", slot: "morning" })).structuredContent;
     expect(m.items.map((i: any) => i.type)).toEqual(["context", "orientation", "give_words"]);
-    expect(m.items[2].suggestedPhrasing).toMatch(/Three words to hold onto/);
+    expect(m.items[2].suggestedPhrasing).toMatch(/Three words for later/);
     const words = m.items[2].stimuli.words as string[];
     expect(words).toEqual(["apple", "candle", "river"]); // demo triplet, as in the video
     let r = (await call("record_answer", { sessionId: m.sessionId, itemId: "context-1", transcript: "Not great, maybe five hours." })).structuredContent;
@@ -57,7 +57,7 @@ describe("MCP over Streamable HTTP", () => {
     expect(mid.items.map((i: any) => i.type)).toEqual(["recall", "fluency", "consistency"]);
     expect(mid.participantFacts.yesterdayStory).toContain("science fair");
     expect(mid.items[1].suggestedPhrasing).toContain("animals");
-    expect(mid.items[2].suggestedPhrasing).toContain(mid.participantFacts.yesterdayStory);
+    expect(mid.items[2].suggestedPhrasing).toContain("granddaughter had a science fair");
     r = (await call("record_answer", { sessionId: mid.sessionId, itemId: "recall-1", transcript: `${words[0]} and ${words[2]}` })).structuredContent;
     expect(r.score).toBe(2); expect(r.feedbackPhrasing).toContain(words[1]);
     r = (await call("record_answer", { sessionId: mid.sessionId, itemId: "fluency-2", transcript: "" })).structuredContent;
@@ -138,7 +138,7 @@ describe("mock brain drives MCP like the simulator", () => {
     const first = t.says.at(-1)!;
     t = await turn(t.state, "I slept about six hours");
     t = await turn(t.state, "It's Wednesday");
-    expect(t.says.join(" ")).toMatch(/Three words to hold onto/);
+    expect(t.says.join(" ")).toMatch(/Three words for later/);
     expect(t.displays.join(" ")).toContain("•••");
     expect(t.displays.join(" ")).not.toMatch(/Three words to hold onto for later: [a-z]+,/);
     t = await turn(t.state, "okay");
@@ -173,7 +173,7 @@ describe("mock brain slot words", () => {
     expect(b.toolCalls[0]).toEqual({ name: "start_checkin", arguments: { participantId: "p-02", slot: "midday" } });
     const s = (await call("start_checkin", b.toolCalls[0].arguments)).structuredContent;
     expect(s.items.map((i: any) => i.type)).toContain("consistency");
-    expect(s.items.find((i: any) => i.type === "consistency").suggestedPhrasing).toContain("Yesterday you told me");
+    expect(s.items.find((i: any) => i.type === "consistency").suggestedPhrasing).toContain("Yesterday you said");
   });
 });
 

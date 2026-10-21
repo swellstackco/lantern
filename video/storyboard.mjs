@@ -20,14 +20,14 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   const ov = (o) => tl.overlays.push(o);
   const line = (id) => clips[id];
   // dialog line: voiced (returns end time) or, if dropped for time, a short silent beat
-  const voiced = (id, t) => (drop.has(id) ? t + 0.75 : ev(line(id), t));
+  const voiced = (id, t) => (drop.has(id) ? t + 0.6 : ev(line(id), t));
   const phr = (id) => align[id].phrases;
 
   // ---------- HOOK (ink card) ----------
   const n01 = line("n01"), p01 = phr("n01");
   const n01t = 0.5;
   let end = ev({ ...n01, phrases: p01 }, n01t);
-  tl.cards.push({ id: "hook", t0: 0, t1: end + 0.4, bg: "ink", glow: 0.55, items: [
+  tl.cards.push({ id: "hook", t0: 0, t1: end + 0.4 + 1.7 - 0.1, hideAfter: true, noOut: true, itemsOutAt: end + 0.4 - 0.6, bg: "ink", glow: 0.55, items: [
     { t: n01t + p01[0].start - 0.15, text: "Families notice memory change months too late.", cls: "h1" },
     { t: n01t + p01[1].start - 0.1, text: "Clinics test once a year.", cls: "h1 amber" },
     { t: n01t + p01[2].start - 0.1, text: "And the test itself teaches you the test.", cls: "sub" } ] });
@@ -39,75 +39,61 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   const n02t = c - 0.35 + 0.35;
   end = ev({ ...n02, phrases: p02 }, n02t);
   const devIn = n02t + n02.dur * 0.5;
-  tl.cards.push({ id: "title", t0: c - 0.5, t1: devIn + 1.1, bg: "paper", glow: 0.9, lantern: true, items: [
+  tl.cards.push({ id: "title", t0: c - 0.1, t1: devIn + 1.1, bloom: true, bg: "paper", glow: 0.9, lantern: true, items: [
     { t: c - 0.1, text: "Lantern", cls: "word" },
     { t: n02t + 0.9, text: "Early light on memory and speech change — through everyday talk with Alexa+.", cls: "tag" } ] });
-  tl.nocap.push([c - 0.5, devIn + 0.4]);
+  tl.nocap.push([c - 0.1, devIn + 0.4]);
   lay(0, { ...BASE, opacity: 0 }); lay(devIn, { ...BASE, scale: BASE.scale * 0.965, opacity: 0 }); lay(devIn + 1.2, BASE, "out");
   state(0, "ambient"); cam(0, 640, 400, 1);
   cam(devIn, 640, 400, 1); cam(end + 0.6, 640, 400, 1.035, "io");
   c = end + 0.15;
 
   // ---------- LIVE CHECK-IN ----------
-  // morning
-  sfx(c); state(c + 0.15, "m1-pre");
-  let t = c + 0.62;
-  state(t, "m1-post");
-  t = voiced("a01", t) + 0.1;
-  state(t, "m2-pre"); t = voiced_rose("r01", t);
-  function voiced_rose(id, tt) { return ev(line(id), tt) + 0.07; }
-  state(t, "m2-post"); t += 0.4;
-  state(t, "m3-pre"); t = voiced_rose("r02", t);
-  state(t, "m3-post"); t += 0.2;
-
-  // narration pieces of n03 are interleaved with the dialog (Rose is fictional... then each measurement, as it happens)
+  // Every Alexa bubble is spoken word for word; a bubble appears exactly when its line starts; the narrator only speaks in the gaps.
   const n03 = line("n03"), a03 = align["n03"];
-  const P = (i0, i1) => piece(n03, a03, i0, i1);
   const ph03 = a03.phrases.length;
-  const pcs = ph03 === 10 ? [[0, 1], [2, 3], [4, 4], [5, 5], [6, 6], [7, 9]] : (() => { const k = Math.ceil(ph03 / 6); const o = []; for (let i = 0; i < ph03; i += k) o.push([i, Math.min(ph03 - 1, i + k - 1)]); return o; })();
-  while (pcs.length < 6) pcs.push(pcs[pcs.length - 1]);
-  const pc = pcs.map(([a, b]) => P(a, b));
-  const dots = shots["m3-post"].boxes.dots, lastB = shots["m3-post"].boxes.lastBubble;
-  // B: "Rose is a fictional sixty-eight-year-old. Her mom had Alzheimer's."
-  let tB = t; t = ev(pc[0], tB) + GAP;
-  cam(tB, 640, 400, 1.035); cam(tB, 640, 400, 1.035); cam(t, 840, 440, 1.1);
-  // C: "Nothing here feels like a test — but every answer is a measurement."
-  const tC = t; t = ev(pc[1], tC) + GAP; const dC = t - tC;
-  if (dots) ov({ k: "ring", sp: "world", rect: [dots.x - 6, dots.y - 4, dots.w + 12, dots.h + 8], t0: tC + 0.05, t1: tC + dC * 0.5, label: null });
-  state(tC + dC * 0.52, "m4-post");
-  cam(tC, 840, 440, 1.1); cam(tC + dC * 0.5, 640, 400, 1.0);
-  sfx(tC + dC * 0.74); state(tC + dC * 0.74, "d1-pre");
-  state(t, "d1-post"); t = voiced("a02", t) + 0.1;
-  state(t, "d2-pre"); t = voiced_rose("r03", t);
-  state(t, "d2-post"); t = voiced("a03", t) + 0.12;
-  // D: "Delayed recall."
-  ov({ k: "chip", t0: t - 0.1, t1: t + pc[2].dur + 2.2, text: "Delayed recall", slot: 0 });
-  t = ev(pc[2], t) + 0.25;
-  state(t, "d3-pre"); t = voiced_rose("r04", t);
-  state(t, "d3-post");
-  const tA = t; t = voiced("a04", t) + 0.12;
-  ov({ k: "chip", t0: tA + 0.2, t1: t + 3.5, text: "Animals named · {n}", slot: 1, from: 0, to: 8, dur: 1.3 });
-  // E: "Naming animals." / "Knowing the day."
-  t = ev(pc[3], t) + 0.1;
-  ov({ k: "chip", t0: t - pc[3].dur, t1: t + 4.8, text: "Category fluency", slot: 2 });
-  const tF = t; state(tF, "m3-post"); t = ev(pc[4], tF) + 0.1;
-  ov({ k: "chip", t0: tF, t1: tF + 1.8, text: "Orientation", slot: 3 });
-  const tG = t; state(tG, "d3-post");
-  // F: "And something new: Lantern remembers what Rose told it yesterday..."
-  t = ev(pc[5], tG) + GAP; const dF = t - tG;
-  const lb = shots["d3-post"].boxes.ribbon;
-  ov({ k: "ring", sp: "world", rect: [lb.x + 6, lb.y + lb.h * 0.52, lb.w - 14, lb.h * 0.47], t0: tG + 0.3, t1: tG + dF - 0.1 });
-  ov({ k: "chip", t0: tG + dF * 0.28, t1: tG + dF + 0.4, text: "Yesterday's story", slot: 4 });
-  cam(tG, 640, 400, 1.0); cam(tG + dF, 960, 470, 1.35);
-  // Rose answers the story
-  state(t, "d4-pre"); cam(t, 960, 470, 1.35); cam(t + 1.2, 640, 400, 1.0);
-  t = voiced_rose("r05", t);
-  state(t, "d4-post"); t += 0.7;
+  const grp = ph03 === 10 ? [[0, 1], [2, 3], [7, 9]] : [[0, Math.min(1, ph03 - 1)], [Math.min(2, ph03 - 1), Math.min(3, ph03 - 1)], [Math.max(0, ph03 - 3), ph03 - 1]];
+  const [pcA, pcB, pcC] = grp.map(([i0, i1]) => piece(n03, a03, i0, i1));
+  const voiced_rose = (id, tt) => ev(line(id), tt) + 0.07;
+  const dialog = (id, pre, post, t0, o = {}) => { // Rose line (pre state) or Alexa line (post state) starts exactly with its audio
+    state(t0, pre ?? post); return ev(line(id), t0) + (o.gap ?? 0.08); };
+  // A: "Rose is a fictional sixty-eight-year-old. Her mom had Alzheimer's." over the ambient screen
+  let t; const tA = c; t = ev(pcA, tA) + 0.22;
+  cam(tA, 640, 400, 1.0); cam(t, 640, 400, 1.03);
+  // morning: wake chime, then strict back-and-forth
+  sfx(t); state(t + 0.05, "m1-pre"); t += 0.5;
+  t = dialog("a01", null, "m1-post", t);
+  t = dialog("r01", "m2-pre", null, t);
+  t = dialog("a02", null, "m2-post", t);
+  const tR2 = t;
+  t = dialog("r02", "m3-pre", null, t);
+  ov({ k: "chip", t0: tR2, t1: t + 2.2, text: "Orientation", slot: 0 });
+  const tm3 = t;
+  t = dialog("a03", null, "m3-post", t, { gap: 0.15 });
+  // B: "Nothing here feels like a test — but every answer is a measurement."
+  const tB = t; t = ev(pcB, tB) + 0.15;
+  const dots = shots["m3-post"].boxes.dots;
+  if (dots) ov({ k: "ring", sp: "world", rect: [dots.x - 8, dots.y - 6, dots.w + 16, dots.h + 12], t0: tm3 + 0.5, t1: tB + 1.6, label: null });
+  // afternoon
+  sfx(t); state(t + 0.05, "d1-pre"); t += 0.5;
+  t = dialog("a04", null, "d1-post", t);
+  const tR3 = t; t = dialog("r03", "d2-pre", null, t);
+  ov({ k: "chip", t0: tR3, t1: t + 2.6, text: "Delayed recall", slot: 0 });
+  t = dialog("a05", null, "d2-post", t);
+  const tR4 = t; t = dialog("r04", "d3-pre", null, t);
+  ov({ k: "chip", t0: tR4, t1: t + 3.0, text: "Category fluency", slot: 0 });
+  ov({ k: "chip", t0: tR4 + 0.2, t1: t + 3.0, text: "Animals named · {n}", slot: 1, from: 0, to: 8, dur: Math.max(1.4, t - tR4 - 0.5) });
+  t = dialog("a06", null, "d3-post", t);
+  const tR5 = t; t = dialog("r05", "d4-pre", null, t, { gap: 0.15 });
+  ov({ k: "chip", t0: tR5, t1: t + 5.5, text: "Yesterday\u2019s story", slot: 0 });
+  // C: "And something new: Lantern remembers what Rose told it yesterday..."
+  const tC = t; t = ev(pcC, tC) + 0.12;
+  cam(tC, 640, 400, 1.0); cam(t, 640, 400, 1.04);
   const checkinEnd = t;
 
   // ---------- DRAWER ----------
   const n04 = line("n04"), p04 = phr("n04");
-  const tD = checkinEnd - 0.45;
+  const tD = checkinEnd - 0.2;
   lay(tD - 0.05, BASE); lay(tD + 1.0, SIDE, "io");
   cam(tD, 640, 400, 1); cam(tD + 1, 640, 400, 1);
   const n04t = tD + 0.5; end = ev({ ...n04, phrases: p04 }, n04t);
@@ -127,9 +113,9 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   // ---------- TREND ----------
   lay(c - 0.2, SIDE); lay(c + 0.9, BASE, "io");
   cam(c, 640, 400, 1);
-  sfx(c + 0.5); state(c + 0.3, "t1-pre");
-  t = c + 0.7; state(t, "t1-post");
-  const tT = t; t = voiced("a05", t) + 0.1;
+  sfx(c + 0.3); state(c + 0.2, "t1-pre");
+  t = c + 0.55; state(t, "t1-post");
+  const tT = t; t = voiced("a08", t) + 0.1;
   cam(tT, 640, 400, 1.0); cam(t, 640, 400, 1.12);
   const n05 = line("n05"), p05 = phr("n05"); const n05t = t; end = ev({ ...n05, phrases: p05 }, n05t);
   const a5 = (i, k = "start") => n05t + p05[Math.min(i, p05.length - 1)][k];
@@ -153,7 +139,7 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   const tS = a5(iSix) - 0.15;
   cam(tS, rcx + 20, rcy - 25, 3.4); cam(tS + 2.0, (sx0 + sx1) / 2 - 18, (sy0 + sy1) / 2 + 6, 2.6, "io");
   ov({ k: "shade", rect: [sx0, sy0, sx1 - sx0, sy1 - sy0], color: "amber", t0: tS + 0.6, t1: end + 0.1 });
-  ov({ k: "callout", anchor: [(sx0 + sx1) / 2, sy0 + 8], dx: -250, dy: -110, text: "Days 60–90 — slow slide: Maya gets a note", t0: tS + 1.2, t1: end + 0.1 });
+  ov({ k: "callout", anchor: [(sx0 + sx1) / 2, sy1], dx: -330, dy: 105, text: "Days 60–90 — slow slide: Maya gets a note", t0: tS + 1.2, t1: end + 0.1 });
   ov({ k: "chip", t0: a5(iTen), t1: end + 0.2, text: "{n} straight days before any alert", slot: 0, from: 0, to: 10, dur: Math.max(1.6, a5(iTen, "end") - a5(iTen) - 0.4) });
   cam(end - 0.05, (sx0 + sx1) / 2 - 18, (sy0 + sy1) / 2 + 6, 2.6); cam(end + 1.0, 640, 400, 1.0, "io");
   c = end + 0.12;
@@ -164,37 +150,49 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   const split = cutAt > 0 ? cutAt : Math.ceil(np / 2);
   const n06a = piece(n06, a06, 0, split - 1), n06b = piece(n06, a06, split, np - 1);
   lay(c, BASE); lay(c + 1.0, SIDE, "io");
-  const t6 = c + 0.35; end = ev(n06a, t6);
+  const t6 = c + 0.25; end = ev(n06a, t6);
   tl.panels.push({ id: "outbox-0", img: "outbox-0", t0: c + 0.3, t1: end + 0.9, fadeIn: 0.7, fadeOut: 0.4, slide: true });
   const ib = pb("outbox-0", "item");
   if (ib) ov({ k: "ring", sp: "panel", rect: [ib.x - 4, ib.y - 4, ib.w + 8, ib.h + 8], t0: t6 + 0.4, t1: end - 0.2 });
   t = end + 0.3;
   lay(t - 0.15, SIDE); lay(t + 0.8, BASE, "io"); cam(t, 640, 400, 1);
-  state(t + 0.3, "t2-pre"); t += 0.75; t = voiced_rose("r06", t);
-  state(t, "t2-post"); t = voiced("a06", t) + 0.1;
+  state(t + 0.2, "t2-pre"); t += 0.5; t = voiced_rose("r06", t);
+  state(t, "t2-post"); t = voiced("a09", t) + 0.1;
   lay(t, BASE); lay(t + 0.9, SIDE, "io");
-  const t6b = t + 0.3; end = ev(n06b, t6b);
+  const t6b = t + 0.2; end = ev(n06b, t6b);
   tl.panels.push({ id: "outbox-1", img: "outbox-1", t0: t + 0.2, t1: end + 0.9, fadeIn: 0.7, fadeOut: 0.4, slide: true });
   const ib1 = pb("outbox-1", "item");
   if (ib1) ov({ k: "ring", sp: "panel", rect: [ib1.x - 4, ib1.y - 4, ib1.w + 8, ib1.h + 8], t0: t6b + 0.5, t1: end - 0.2 });
   ov({ k: "chip", t0: t6b + 0.4, t1: end + 0.4, text: "Invite sent · calendar updated", slot: 0 });
   c = end + 0.12;
 
-  // ---------- DOCTOR SUMMARY ----------
+  // ---------- DOCTOR SUMMARY + VOICE ----------
   lay(c - 0.2, SIDE); lay(c + 0.9, BASE, "io"); cam(c, 640, 400, 1);
   sfx(c + 0.4); state(c + 0.3, "ds-pre");
-  t = c + 0.65; state(t, "ds-post"); t += 0.3;
-  const n07 = line("n07"), p07 = phr("n07"); const n07t = t; end = ev({ ...n07, phrases: p07 }, n07t);
+  t = c + 0.5; state(t, "ds-post"); t += 0.15;
+  const n07 = line("n07"), a07al = align["n07"], np7 = a07al.phrases.length;
+  const iPage = Math.max(0, a07al.phrases.findIndex((p) => /one page/i.test(p.text)));
+  const iDemo = a07al.phrases.findIndex((p) => /In our demo/i.test(p.text));
+  const i7 = iDemo > iPage ? iDemo : Math.min(np7 - 1, iPage + 1);
+  // time recovered: the "Real-change numbers, how often she answered..." sentence is cut
+  const n07a = piece(n07, a07al, 0, iPage), n07b = piece(n07, a07al, i7, np7 - 1);
   const doc = shots["doctor-tall"]; const docH = doc.h * 0.585;
-  const scr = shots["ds-post"].boxes.screen; // inner screen rect in device px
-  const view = scr.h - 0;
-  const maxY = Math.max(0, docH - view);
-  const a7 = (i, k = "start") => n07t + p07[Math.min(i, p07.length - 1)][k];
-  const iVoice = p07.findIndex((p) => /In our demo/i.test(p.text)); const iVoiceX = iVoice < 0 ? Math.floor(p07.length * 0.55) : iVoice;
-  tl.tall.push({ img: "doctor-tall", t0: n07t - 0.1, t1: end + 0.5, rect: [scr.x, scr.y, scr.w, scr.h], crop: 0.585, keys: [{ t: n07t, y: 0 }, { t: a7(2), y: 0 }, { t: a7(iVoiceX) - 0.2, y: maxY }, { t: end + 0.5, y: maxY }], fadeIn: 0.6 });
-  cam(n07t, 640, 400, 1); cam(n07t + 3, 640, 400, 1.04); cam(end + 0.5, 640, 400, 1.0);
-  ov({ k: "chip", t0: a7(iVoiceX) + 0.2, t1: end + 0.3, text: "Voice features · simulator only · numbers, never audio", slot: 0 });
-  ov({ k: "chip", t0: a7(0) + 0.4, t1: a7(iVoiceX) - 0.3, text: "One page for the doctor", slot: 0 });
+  const scr = shots["ds-post"].boxes.screen; const maxY = Math.max(0, docH - scr.h);
+  const n07t = t; end = ev(n07a, n07t);
+  tl.tall.push({ img: "doctor-tall", t0: n07t - 0.1, t1: end + 0.3, rect: [scr.x, scr.y, scr.w, scr.h], crop: 0.585, keys: [{ t: n07t, y: 0 }, { t: end + 0.2, y: maxY * 0.55 }], fadeIn: 0.5, fadeOut: 0.35 });
+  ov({ k: "chip", t0: n07t + 0.3, t1: end + 0.2, text: "One page for the doctor", slot: 0 });
+  // voice: ask for it, the card appears, then push in to the Voice sparkline while the narrator talks about voice
+  t = end + 0.2; sfx(t); state(t + 0.05, "vt-pre"); t += 0.5; state(t, "vt-post");
+  const tV = t + 0.15; end = ev(n07b, tV);
+  const vb = shots["vt-voice"].boxes.voice;
+  state(tV + 1.0, "vt-voice");
+  if (vb) {
+    const vcx = vb.x + 140, vcy = vb.y + 115;
+    cam(tV, 640, 400, 1.0); cam(tV + 1.0, 640, 400, 1.0); cam(tV + 3.8, vcx, vcy, 1.9, "io"); cam(end + 0.2, vcx + 30, vcy - 6, 2.1, "io");
+    ov({ k: "ring", sp: "world", rect: [vb.x - 20, vb.y - 20, 306, 200], t0: tV + 3.2, t1: end, label: null });
+  }
+  ov({ k: "chip", t0: tV + 1.2, t1: end + 0.2, text: "Voice features · simulator only · numbers, never audio", slot: 0 });
+  cam(end + 0.2, vb ? vb.x + 170 : 640, vb ? vb.y + 109 : 400, 2.1); cam(end + 0.9, 640, 400, 1.0, "io");
   c = end + 0.12;
 
   // ---------- RESEARCH ----------
@@ -217,24 +215,30 @@ export function storyboard({ clips, align, shots, chart, inspector, skill, excer
   cam(tX - 0.1, 640, 400, 1.0); cam(tX + 1.2, 560, 330, 1.15);
   c = end + 0.12;
 
-  // ---------- HOSTS (real terminal) ----------
-  const n09 = line("n09"), p09 = phr("n09"); const t9 = c + 0.35; end = ev({ ...n09, phrases: p09 }, t9);
-  tl.term = { t0: c - 0.1, t1: end + 0.6, skill, inspector, k: [t9 + 0.2, t9 + p09[Math.min(1, p09.length - 1)].start + 0.1, t9 + p09[Math.min(2, p09.length - 1)].start - 0.2] };
+  // ---------- HOSTS (real terminal): one clean tools/call + result ----------
+  const n09 = line("n09"), a09al = align["n09"];
+  const iSk = Math.max(0, a09al.phrases.findIndex((p) => /Agent Skill/i.test(p.text)));
+  const n09p = piece(n09, a09al, 0, iSk); // "One command runs the whole thing..." is cut
+  const t9 = c + 0.25; end = ev(n09p, t9);
+  tl.term = { t0: c - 0.1, t1: end + 1.4, inspector, k: [t9 + 0.4] };
   lay(c - 0.2, BASE); lay(c + 0.45, { ...BASE, scale: BASE.scale * 0.97, opacity: 0, blur: 5 }, "io");
-  c = end + 0.2;
+  c = end + 1.4;
 
   // ---------- EMERGENCY + CLOSE ----------
   lay(c - 0.1, { ...BASE, scale: BASE.scale * 0.97, opacity: 0, blur: 5 }); lay(c + 0.6, BASE, "out"); cam(c, 640, 400, 1);
   sfx(c + 0.3); state(c + 0.2, "e1-pre");
-  t = c + 0.3; t = voiced_rose("r07", t);
-  state(t, "e1-post"); t = voiced("a07", t) + 0.12;
+  t = c + 0.3; t = ev(line("r07"), t) + 0.08;
+  state(t, "e1-post"); const tE = t; t = ev(line("a07"), t);
+  tl.alerts = [{ t0: tE + 0.1, t1: t + 1.15, title: "Call 911 now", sub: "Lantern is letting Maya know." }];
+  t += 1.0; // a full second of air on the emergency
   const n10 = line("n10"), p10 = phr("n10"); const t10 = t; end = ev({ ...n10, phrases: p10 }, t10);
   const a10 = (i, k = "start") => t10 + p10[Math.min(i, p10.length - 1)][k];
   const iL = p10.findIndex((p) => /^Lantern\.?$/i.test(p.text.trim())); const iLan = iL < 0 ? Math.max(0, p10.length - 3) : iL;
-  tl.panels.push({ id: "outbox-urgent", img: "outbox-urgent", t0: t10 + 0.2, t1: a10(iLan) + 0.15, fadeIn: 0.7, fadeOut: 0.5, slide: true });
-  lay(t10, BASE); lay(t10 + 0.9, SIDE, "io"); lay(a10(iLan) - 0.2, SIDE); lay(a10(iLan) + 0.7, { ...SIDE, opacity: 0, blur: 6 }, "io");
-  const ub = pb("outbox-urgent", "item"); if (ub) ov({ k: "ring", sp: "panel", rect: [ub.x - 4, ub.y - 4, ub.w + 8, ub.h + 8], t0: t10 + 1.0, t1: a10(iLan) - 0.1 });
-  const closeEnd = end + 1.4;
+  const tP = t10 - 0.7;
+  tl.panels.push({ id: "outbox-urgent", img: "outbox-urgent", t0: tP, t1: a10(iLan) + 0.15, fadeIn: 0.7, fadeOut: 0.5, slide: true });
+  lay(tP, BASE); lay(tP + 0.9, SIDE, "io"); lay(a10(iLan) - 0.2, SIDE); lay(a10(iLan) + 0.7, { ...SIDE, opacity: 0, blur: 6 }, "io");
+  const ub = pb("outbox-urgent", "item"); if (ub) ov({ k: "ring", sp: "panel", rect: [ub.x - 4, ub.y - 4, ub.w + 8, ub.h + 8], t0: tP + 1.1, t1: a10(iLan) - 0.1 });
+  const closeEnd = end + 1.2;
   tl.cards.push({ id: "close", t0: a10(iLan) - 0.1, t1: closeEnd, noOut: true, bg: "paper", glow: 0.95, lantern: true, items: [
     { t: a10(iLan) + 0.05, text: "Lantern", cls: "word" },
     { t: a10(Math.min(iLan + 1, p10.length - 1)) - 0.1, text: "Not a diagnosis.", cls: "h1" },
