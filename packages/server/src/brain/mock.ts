@@ -56,6 +56,7 @@ function onUser(s: BrainState, text: string): BrainResponse {
     return reply(s, undefined, [{ name: "enroll_in_study", arguments: { participantId: pid, studyCode: code } }]);
   }
   if (/doctor summary|summary for (the|her) doctor|bring to the doctor/.test(low)) return reply(s, undefined, [{ name: "get_doctor_summary", arguments: { participantId: pid } }]);
+  if (/(send|email).*(digest|weekly)|weekly (note|digest)/.test(low)) return reply(s, undefined, [{ name: "notify_care_circle", arguments: { participantId: pid, kind: "digest" } }]);
   if (/(any )?updates? (for|on) maya|anything (new )?for maya/.test(low)) return reply({ ...s }, undefined, [{ name: "get_trend", arguments: { participantId: pid, audience: "caregiver" } }]);
   if (/(show|send).*(maya|family|trend)|trend for maya|show maya/.test(low)) return reply(s, undefined, [{ name: "get_trend", arguments: { participantId: pid, audience: "caregiver" } }]);
   if (/how am i doing|how'?m i doing|how are things/.test(low)) return reply(s, undefined, [{ name: "get_trend", arguments: { participantId: pid, audience: "participant" } }]);
@@ -92,6 +93,7 @@ function onResult(s: BrainState, name: string, args: Record<string, any> | undef
       if (d.audience === "participant") return reply(s, d.words);
       if (d.alert) return reply({ ...s, mode: "visit_offer" }, `Here's how ${d.participant.name.split(" ")[0]} is doing. ${d.sentence} It may be worth a check-up. Want me to add a doctor visit to the calendar?`);
       return reply(s, `Here's how ${d.participant.name.split(" ")[0]} is doing. ${d.sentence}`);
+    case "notify_care_circle": return reply(s, `Okay. I put ${d.delivered.length ? "the note" : "a note"} in Maya's outbox. It says: ${d.previewText.slice(0, 120)}`);
     case "get_doctor_summary": return reply(s, `Here's the one-page summary for ${d.identity.name.split(" ")[0]}'s doctor. It's on the screen. You can print it from there.`);
     case "schedule_doctor_visit": return reply(s, `Done. I added the visit for ${d.when ?? "that time"} and sent the note to ${d.emailedTo.join(" and ")}.`);
     case "report_concern": return reply(s, d.participantPhrasing || "Okay. I'm here if you need me.");

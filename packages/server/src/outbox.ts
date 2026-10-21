@@ -7,6 +7,7 @@ import { now } from "./clock.js";
 import type { Repo } from "./storage/repo.js";
 
 import { OUTBOX_PATH } from "./paths.js";
+import { digestBody, noticeBody } from "./digest.js";
 export const OUTBOX_DIR = OUTBOX_PATH;
 
 export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -45,10 +46,10 @@ export function notifyCareCircle(repo: Repo, p: Participant, kind: NotifyKind, o
     body = `<h1 style="font-size:26px;margin:0 0 12px">Please check on ${esc(first)} now</h1><p style="font-size:18px;line-height:1.5">${esc(first)} said something that may mean she needs help right away.</p>${opts.quote ? `<blockquote style="border-left:4px solid #E8A33D;margin:16px 0;padding:4px 16px;font-size:18px">&ldquo;${esc(opts.quote)}&rdquo;</blockquote>` : ""}<p style="font-size:16px">Time: ${esc(now().toLocaleString("en-US", { timeZone: p.tz }))}. ${esc(first)} was told to call 911.</p>`;
   } else if (kind === "notice") {
     subject = `A gentle note about ${first}`;
-    body = opts.bodyHtml ?? `<h1 style="font-size:26px;margin:0 0 12px">A gentle note about ${esc(first)}</h1><p style="font-size:18px;line-height:1.5">Over the last two weeks, ${esc(first)}'s word recall has been a bit lower than her usual. This can have many causes, like sleep, stress, or a cold. It may be worth a check-up.</p><p style="font-size:18px;line-height:1.5">A one-page summary you can bring to the doctor is ready in ${PRODUCT.name}. Ask Alexa to show the doctor summary.</p>`;
+    body = opts.bodyHtml ?? noticeBody(repo, p);
   } else if (kind === "digest") {
     subject = `${first}'s week`;
-    body = opts.bodyHtml ?? `<h1 style="font-size:26px;margin:0 0 12px">${esc(first)}'s week</h1><p style="font-size:18px">${esc(opts.message ?? "A steady week.")}</p>`;
+    body = opts.bodyHtml ?? (opts.message ? `<h1 style="font-size:26px;margin:0 0 12px">${esc(first)}'s week</h1><p style="font-size:18px">${esc(opts.message)}</p>` : digestBody(repo, p));
   } else {
     subject = opts.subject ?? `A note about ${first}`;
     body = opts.bodyHtml ?? `<p style="font-size:18px;line-height:1.5">${esc(opts.message ?? "")}</p>`;

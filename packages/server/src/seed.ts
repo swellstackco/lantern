@@ -5,6 +5,7 @@ import {
 } from "@lantern/shared";
 import { randomUUID } from "node:crypto";
 import { refreshAlerts, ALL_DOMAINS } from "./engine.js";
+import { notifyCareCircle } from "./outbox.js";
 import { SEED_STUDIES } from "./studies.js";
 import type { Repo } from "./storage/repo.js";
 
@@ -203,7 +204,7 @@ function genPerson(repo: Repo, prof: Profile, seed: number, lastDay: string): { 
 export interface SeedRow { id: string; name: string; mode: string; adherence: number; alertDay: number | null; finalStatus: string; sessions: number }
 export const ROSE_ID = "rose";
 
-export function seedDatabase(repo: Repo, today: string): SeedRow[] {
+export function seedDatabase(repo: Repo, today: string, opts: { outbox?: boolean } = {}): SeedRow[] {
   repo.reset();
   const lastDay = addDays(today, -1);
   for (const s of SEED_STUDIES) repo.upsertStudy(s);
@@ -231,6 +232,7 @@ export function seedDatabase(repo: Repo, today: string): SeedRow[] {
     }
     const final = refreshAlerts(repo, prof.id, lastDay).result;
     const sessions = repo.listSessions(prof.id).length;
+    if (opts.outbox && prof.id === ROSE_ID) { const open = repo.openAlert(prof.id); if (open) { notifyCareCircle(repo, repo.getParticipant(prof.id)!, "notice"); repo.updateAlert(open.id, { notifiedAt: lastDay }); } }
     rows.push({ id: prof.id, name: prof.name, mode: repo.getParticipant(prof.id)!.mode, adherence: Math.round((sessions / (DAYS * 3)) * 100), alertDay, finalStatus: final.status, sessions });
     repo.upsertEnrollment({ participantId: prof.id, studyCode: "LANTERN-PILOT", tier: prof.tier, consentVersion: "1.0", consentedAt: addDays(lastDay, -DAYS) + "T10:00:00Z" });
   });

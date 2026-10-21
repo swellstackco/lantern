@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { readFileSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { SqliteRepo } from "./storage/sqlite.js";
 import { seedDatabase } from "./seed.js";
 import { scrubTranscript } from "./deid.js";
@@ -38,11 +38,11 @@ describe("export_research_data", () => {
     const code = csv[1]!.split(",")[0]!;
     expect(code).toMatch(/^P-[0-9A-F]{10}$/);
     for (const w of FORBIDDEN) expect(csv.join("\n").includes(w), w).toBe(false);
-    expect(readdirSync(dir)).toContain("LANTERN-PILOT.data_dictionary.csv");
+    expect(readdirSync(dirname(r.path))).toContain("LANTERN-PILOT.data_dictionary.csv");
     expect(real).toBe("2026-07-23"); // sanity: real first day of Rose is a known date
   });
   it("Tier 1 has no transcripts; Tier 2 transcripts are scrubbed", () => {
-    const csv = readFileSync(join(dir, "LANTERN-PILOT.csv"), "utf8").split("\n").slice(1).filter(Boolean);
+    const csv = readFileSync(mod.exportResearchData(repo, "LANTERN-PILOT", "csv").path, "utf8").split("\n").slice(1).filter(Boolean);
     const withNote = csv.filter((l) => /,"[^"]+"$/.test(l));
     expect(withNote.length).toBeGreaterThan(50);
     const tier1Notes = csv.filter((l) => l.split(",")[9] === "1" && /,"[^"]+"$/.test(l));
